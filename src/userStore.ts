@@ -1,10 +1,10 @@
 import admin from "firebase-admin";
 import logger from "./logger";
 import { MessageEmbed } from "discord.js";
-if (!(process.env.PERM_LOCATION && process.env.DB_LOCATION)){
+if (!(process.env.PERM_STRING && process.env.DB_LOCATION)){
   throw new Error("PERM_LOCATION or DB_LOCATION not set")
 }
-const serviceAccount = require(process.env.PERM_LOCATION);
+const serviceAccount = JSON.parse(process.env.PERM_STRING);
 const COLLECTION_NAME = "members";
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
