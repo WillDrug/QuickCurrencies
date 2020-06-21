@@ -9,6 +9,7 @@
     "start": "yarn tsc && node lib/index.js"
   },
   "dependencies": {
+    "@types/express": "^4.17.6",
     "@types/node": "^14.0.13",
     "@types/pino": "^6.3.0",
     "discord.js": "^12.2.0",
