@@ -1,20 +1,10 @@
-import admin from "firebase-admin";
 import logger from "./logger";
-import { MessageEmbed } from "discord.js";
-if (!(process.env.PERM_STRING && process.env.DB_LOCATION)){
-  throw new Error("PERM_LOCATION or DB_LOCATION not set")
-}
-const serviceAccount = JSON.parse(process.env.PERM_STRING);
+import {db} from "./dbConnection";
 const COLLECTION_NAME = "members";
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.DB_LOCATION
-});
 
-const db = admin.firestore();
 const save = (store: Map<string, number>) => {
   Array.from(store.entries()).forEach(([key, val]) => {
-    db.collection("members").doc(key).set({ currency: val });
+    db.collection(COLLECTION_NAME).doc(key).set({ currency: val });
   });
   logger.info("Saved to db");
 };
@@ -23,7 +13,7 @@ export class UserStore {
   private store: Map<string, number> = new Map();
   constructor() {
     // pull state out of firestore and save here.
-    db.collection("members")
+    db.collection(COLLECTION_NAME)
       .get()
       .then((snapshot) => {
         snapshot.forEach((doc) => {

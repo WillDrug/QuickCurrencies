@@ -16,7 +16,7 @@ import { roleHandler, emojiHandler, commandParser } from "./util";
 
 
 
-const settingsStore = new SettingsStore({ location: "settingsStore.json" }); //TODO make me env var (dont be lazy scoot scoot)
+const settingsStore = new SettingsStore(); //TODO make me env var (dont be lazy scoot scoot)
 
 const client = new discord.Client();
 const userStore = new UserStore();

@@ -1,7 +1,5 @@
-import { fstat, writeFileSync, readFileSync } from "fs";
 import logger from "./logger";
-import { settings } from "cluster";
-
+import { db } from "./dbConnection";
 
 export class SettingsStore {
   public settings: {
@@ -11,29 +9,40 @@ export class SettingsStore {
     currencyValue: number;
     currencyName: string;
     photoBill: number;
+  };
+
+  constructor() {
+    this.settings = {
+      role: "",
+      emoji: "",
+      delim: "",
+      currencyValue: 1,
+      currencyName: "",
+      photoBill: 1,
+    };
+    db.collection("settings")
+      .doc("catscafe")
+      .get()
+      .then((d) => {
+        const s = d.data();
+        logger.info({ msg: "Loaded settings:", s });
+        this.setSettings(s);
+      });
   }
-  
-  private location: string;
-
-  constructor(config: { location: string }) {
-    this.location = config.location
-    const settings = JSON.parse(readFileSync(`${process.cwd()}/${this.location}`).toString())
-    logger.info({msg: "Loaded settings:", settings});
-
-    this.settings = settings;
+  private setSettings(s: any) {
+    this.settings = s;
   }
 
   private saveStore() {
-    writeFileSync(
-      `${process.cwd()}/${this.location}`,
-      JSON.stringify(this.settings,null,2)
-    );
-    logger.info("Saved store")
+    db.collection("settings")
+      .doc("catscafe")
+      .set(this.settings, { merge: true });
+    logger.info("Saved store");
   }
 
-  public setEmoji(emoji: string){
+  public setEmoji(emoji: string) {
     this.settings.emoji = emoji;
-    this.saveStore()
+    this.saveStore();
   }
 
   public setRole(role: string) {
@@ -45,17 +54,16 @@ export class SettingsStore {
     this.saveStore();
   }
   public setCurrencyValue(val: number) {
-    this.settings.currencyValue= val;
+    this.settings.currencyValue = val;
     this.saveStore();
   }
-  public setCurrencyName(name: string){
+  public setCurrencyName(name: string) {
     this.settings.currencyName = name;
-    this.saveStore()
+    this.saveStore();
   }
 
-  public setPhotoPrice(price: number){
+  public setPhotoPrice(price: number) {
     this.settings.photoBill = price;
     this.saveStore();
   }
-
 }
