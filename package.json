@@ -6,7 +6,7 @@
   "author": "Scott Harwood <scott.harwood@scottharwood.dev>",
   "license": "MIT",
   "scripts": {
-    "start": "yarn tsc && node lib/index.ts"
+    "start": "yarn tsc && node lib/index.js"
   },
   "dependencies": {
     "@types/node": "^14.0.13",
