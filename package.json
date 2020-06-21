@@ -1,0 +1,17 @@
+{
+  "name": "LoveableLeaderboards",
+  "version": "1.0.0",
+  "description": "discord.js based leaderboards for dispensing currency",
+  "main": "lib/index.js",
+  "author": "Scott Harwood <scott.harwood@scottharwood.dev>",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^14.0.13",
+    "@types/pino": "^6.3.0",
+    "discord.js": "^12.2.0",
+    "dotenv": "^8.2.0",
+    "firebase-admin": "^8.12.1",
+    "pino": "^6.3.2",
+    "typescript": "^3.9.5"
+  }
+}

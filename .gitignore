@@ -1,0 +1,4 @@
+perms/
+.env
+lib/
+node_modules/
