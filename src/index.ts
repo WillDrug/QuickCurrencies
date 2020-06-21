@@ -271,3 +271,11 @@ client.on("messageReactionAdd", (reaction, user) => {
   }
 });
 client.login(process.env.DISCORD_TOKEN);
+
+
+import Express from "express";
+
+const app = new Express()
+app.get("/", (req, res) => res.send("You have found the secret"))
+app.listen(process.env.PORT, () => logger.info("Working"))
+
