@@ -23,5 +23,5 @@ export const commandParser = (cmd: string): [string, string] => {
 
 export const mentionHandler = (src: string): string[] => {
   const matches = src.match(/<@!(\d+)>/g);
-  return matches ? matches.map((match) => match.substr(2).replace(">", "")): [];
+  return matches ? matches.map((match) => match.substr(3).replace(">", "")): [];
 }; //return array of ids from string;
