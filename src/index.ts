@@ -1,10 +1,7 @@
 import discord, {
-  User,
-  RoleManager,
   MessageEmbed,
-  DiscordAPIError,
   TextChannel,
-  Message,
+  
   DMChannel,
   NewsChannel,
 } from "discord.js";
@@ -12,16 +9,13 @@ import dotenv from "dotenv";
 dotenv.config();
 import { SettingsStore } from "./settingsStore";
 import { UserStore } from "./userStore";
-import { roleHandler, emojiHandler, commandParser } from "./util";
-
-
+import { roleHandler, mentionHandler, emojiHandler, commandParser } from "./util";
 
 const settingsStore = new SettingsStore(); //TODO make me env var (dont be lazy scoot scoot)
 
 const client = new discord.Client();
 const userStore = new UserStore();
 import logger from "./logger";
-import { settings } from "cluster";
 const changeSuccessful = (
   channel: TextChannel | DMChannel | NewsChannel,
   fieldName: string,
@@ -175,7 +169,10 @@ client.on("message", (msg) => {
 
     if (
       content.startsWith(`${delim}makeItRain`) ||
-      content.startsWith(`${delim}MIR`) && msg.member?.roles.cache.find((role) => role.id === settingsStore.settings.role )
+      (content.startsWith(`${delim}MIR`) &&
+        msg.member?.roles.cache.find(
+          (role) => role.id === settingsStore.settings.role
+        ))
     ) {
       const [_, amount] = commandParser(content);
       const embed = new MessageEmbed()
@@ -195,11 +192,42 @@ client.on("message", (msg) => {
       msg.channel.send(embed);
       return;
     }
+    if (
+      content.startsWith(`${delim}giveMoney`) ||
+      content.startsWith(`${delim}gm`) //&&
+      // msg.member?.roles.cache.find((r) => r.id === settingsStore.settings.role)
+    ) {
+      const [_, args] = commandParser(content);
+      const arrayArgs = args.split(" ");
+      const person = mentionHandler(arrayArgs[0])[0];
 
+      const amount = arrayArgs[1];
+      const numAmount = parseInt(amount);
+      if (isNaN(numAmount)) {
+        throw new Error("Invalid number");
+      }
+      console.log(person);
+      if (person.length) {
+        if (numAmount > 0) {
+          userStore.addBucks(person, numAmount);
+          msg.channel.send(
+            new MessageEmbed()
+              .setTitle(`${settingsStore.settings.currencyName} Aquired!`)
+              .setDescription(
+                `
+            <@${person}>! <@${msg.member?.id}> has given you ${amount} ${settingsStore.settings.currencyName}
+          `
+              )
+          );
+        }
+      }
+      return;
+    }
     if (content.startsWith(`${delim}randomPhoto`)) {
       ///pick random photo from db and reduce funds.#
       if (
-        msg.member && userStore.getMyBalance(msg.member.id) > settingsStore.settings.photoBill
+        msg.member &&
+        userStore.getMyBalance(msg.member.id) > settingsStore.settings.photoBill
       ) {
         userStore.getPhoto().then((p) => {
           const embed = new MessageEmbed()
@@ -272,10 +300,8 @@ client.on("messageReactionAdd", (reaction, user) => {
 });
 client.login(process.env.DISCORD_TOKEN);
 
-
 import express from "express";
 
-const app = express()
-app.get("/", (req: any, res: any) => res.send("You have found the secret"))
-app.listen(process.env.PORT, () => logger.info("Working"))
-
+const app = express();
+app.get("/", (req: any, res: any) => res.send("You have found the secret"));
+app.listen(process.env.PORT, () => logger.info("Working"));

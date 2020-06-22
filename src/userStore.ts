@@ -1,16 +1,21 @@
 import logger from "./logger";
-import {db} from "./dbConnection";
+import { db } from "./dbConnection";
 const COLLECTION_NAME = "members";
 
-const save = (store: Map<string, number>) => {
-  Array.from(store.entries()).forEach(([key, val]) => {
-    db.collection(COLLECTION_NAME).doc(key).set({ currency: val });
+const save = (store: Map<string, number>, diffQueue: string[]) => {
+  diffQueue.forEach((uid) => {
+    const val = store.get(uid);
+    if (val) {
+      db.collection(COLLECTION_NAME).doc(uid).set({ currency: val });
+    }
   });
+  diffQueue.splice(0, diffQueue.length);
   logger.info("Saved to db");
 };
 
 export class UserStore {
   private store: Map<string, number> = new Map();
+  private diffQueue: string[] = [];
   constructor() {
     // pull state out of firestore and save here.
     db.collection(COLLECTION_NAME)
@@ -21,22 +26,24 @@ export class UserStore {
         });
       });
     setInterval(
-      () => save(this.store),
+      () => save(this.store, this.diffQueue),
       parseInt(process.env.SAVE_INTERVAL_MS || (5 * 60 * 1000).toString())
     );
   }
 
   public saveToFireStore() {
-    save(this.store);
+    save(this.store, this.diffQueue);
   }
 
   public addBucks(uid: string, amount: number) {
     const currAmmount = this.store.get(uid);
     if (currAmmount) {
-      this.store.set(uid, currAmmount + amount);
+      this.store.set(uid, Math.round(currAmmount + amount));
     } else {
       this.store.set(uid, amount);
     }
+
+    this.diffQueue.push(uid);
   }
 
   public getTop(n: number) {
@@ -67,7 +74,7 @@ export class UserStore {
     snapShot.forEach((e) => {
       photos.push(e.data().location);
     });
-    return photos[Math.floor(Math.random() * (photos.length))];
+    return photos[Math.floor(Math.random() * photos.length)];
   }
 
   public billAccount(id: string, amount: number) {

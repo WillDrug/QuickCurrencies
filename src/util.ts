@@ -13,9 +13,15 @@ export const emojiHandler = (emojiString: string): string => {
 };
 
 
+
 export const commandParser = (cmd: string): [string, string] => {
   const spaceLocation = cmd.indexOf(" ");
   const emote = cmd.substr(spaceLocation + 1);
   const command = cmd.substr(0, spaceLocation);
   return [command, emote];
 }
+
+export const mentionHandler = (src: string): string[] => {
+  const matches = src.match(/<@!(\d+)>/g);
+  return matches ? matches.map((match) => match.substr(2).replace(">", "")): [];
+}; //return array of ids from string;
