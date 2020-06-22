@@ -194,9 +194,10 @@ client.on("message", (msg) => {
     }
     if (
       content.startsWith(`${delim}giveMoney`) ||
-      content.startsWith(`${delim}gm`) //&&
-      // msg.member?.roles.cache.find((r) => r.id === settingsStore.settings.role)
+      content.startsWith(`${delim}gm`) 
     ) {
+
+      
       const [_, args] = commandParser(content);
       const arrayArgs = args.split(" ");
       const person = mentionHandler(arrayArgs[0])[0];
@@ -207,6 +208,16 @@ client.on("message", (msg) => {
         throw new Error("Invalid number");
       }
       console.log(person);
+
+      if (!msg.member?.roles.cache.find((r) => r.id === settingsStore.settings.role)){// if not role giver then billem
+        if (msg.member){
+          if (!(userStore.getMyBalance(msg.member.id) >= numAmount)){
+            throw new Error("Insufficient Funds");
+          };
+          userStore.billAccount(msg.member.id, numAmount);
+        }
+      }
+
       if (person.length) {
         if (numAmount > 0) {
           userStore.addBucks(person, numAmount);
