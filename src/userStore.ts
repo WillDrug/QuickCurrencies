@@ -67,21 +67,26 @@ export class UserStore {
     });
   }
 
-  public async getPhoto(): Promise<string> {
-    const photos: string[] = [];
+  public async getPhoto(): Promise<{ location: string; text?: string }> {
+    const photos: { location: string; text?: string }[] = [];
     const snapShot = await db.collection("images").get();
 
     snapShot.forEach((e) => {
-      photos.push(e.data().location);
+      photos.push(e.data() as any);
     });
     return photos[Math.floor(Math.random() * photos.length)];
   }
 
   public billAccount(id: string, amount: number) {
+    if (amount < 0){
+      throw new Error("Tried to bill negative")
+    }
     this.addBucks(id, -amount);
   }
 
-  public addPhoto(url: string) {
-    db.collection("images").doc().set({ location: url });
+  public addPhoto(url: string, name?: string) {
+    db.collection("images")
+      .doc()
+      .set(name ? { location: url, text: name } : { location: url });
   }
 }

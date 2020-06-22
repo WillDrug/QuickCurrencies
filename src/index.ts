@@ -95,8 +95,18 @@ client.on("message", (msg) => {
       }
 
       if (content.startsWith(`${delim}addPhoto`)) {
-        const [_, photoUrl] = commandParser(content);
-        userStore.addPhoto(photoUrl);
+        const [_, photoString] = commandParser(content);
+        const space = photoString.indexOf(" ");
+        let photoUrl;
+        let name;
+        if (space == -1){
+          photoUrl = photoString;
+        }
+        else {
+          photoUrl = photoString.substr(0,space);
+          name = photoString.substr(space+1);
+        }
+        userStore.addPhoto(photoUrl, name);
         msg.channel.send(
           new MessageEmbed().setTitle("Photo Added").setImage(photoUrl)
         );
@@ -241,8 +251,8 @@ client.on("message", (msg) => {
       ) {
         userStore.getPhoto().then((p) => {
           const embed = new MessageEmbed()
-            .setTitle("Look at this photograph!")
-            .setImage(p);
+            .setTitle(p.text || "Look at this photograph!")
+            .setImage(p.location);
           if (msg.member) {
             userStore.billAccount(
               msg.member.id,
