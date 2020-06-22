@@ -207,18 +207,17 @@ client.on("message", (msg) => {
       if (isNaN(numAmount)) {
         throw new Error("Invalid number");
       }
-      console.log(person);
+      console.log(person, msg.content);
 
-      if (!msg.member?.roles.cache.find((r) => r.id === settingsStore.settings.role)){// if not role giver then billem
-        if (msg.member){
-          if (!(userStore.getMyBalance(msg.member.id) >= numAmount)){
-            throw new Error("Insufficient Funds");
-          };
-          userStore.billAccount(msg.member.id, numAmount);
+      if (person) {
+        if (!msg.member?.roles.cache.find((r) => r.id === settingsStore.settings.role)){// if not role giver then billem
+          if (msg.member){
+            if (!(userStore.getMyBalance(msg.member.id) >= numAmount)){
+              throw new Error("Insufficient Funds");
+            };
+            userStore.billAccount(msg.member.id, numAmount);
+          }
         }
-      }
-
-      if (person.length) {
         if (numAmount > 0) {
           userStore.addBucks(person, numAmount);
           msg.channel.send(
