@@ -218,9 +218,9 @@ client.on("message", (msg) => {
         throw new Error("Invalid number");
       }
       console.log(person, msg.content);
-
+      const hasRole = msg.member?.roles.cache.find((r) => r.id === settingsStore.settings.role)
       if (person) {
-        if (!msg.member?.roles.cache.find((r) => r.id === settingsStore.settings.role)){// if not role giver then billem
+        if (!hasRole){// if not role giver then billem
           if (msg.member){
             if (!(userStore.getMyBalance(msg.member.id) >= numAmount)){
               throw new Error("Insufficient Funds");
@@ -228,7 +228,7 @@ client.on("message", (msg) => {
             userStore.billAccount(msg.member.id, numAmount);
           }
         }
-        if (numAmount > 0) {
+        if (numAmount > 0 || hasRole) {//If amount > 0 or user has role(so they can bill whatever they want)
           userStore.addBucks(person, numAmount);
           msg.channel.send(
             new MessageEmbed()
