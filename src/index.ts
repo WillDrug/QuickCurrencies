@@ -324,7 +324,22 @@ client.on("message", (msg) => {
       content.startsWith(`${delim}showChallenges`) ||
       content.startsWith(`${delim}sc`)
     ) {
-      challengeStore.listChallenges(msg.channel);
+      const [_, name] = commandParser(content);
+      if (name != `${delim}sc`) {
+        challengeStore
+          .specificChallengeStatus(name)
+          .then((challenge) => msg.channel.send(challenge))
+          .catch((e) =>
+            msg.channel.send(
+              new MessageEmbed()
+                .setTitle("ERROR!")
+                .setColor("#ad0000")
+                .setDescription(`Your last command failed: ${e.message}`)
+            )
+          );
+      } else {
+        challengeStore.listChallenges(msg.channel);
+      }
       return;
     }
 
@@ -388,24 +403,6 @@ client.on("message", (msg) => {
       return;
     }
 
-    if (
-      content.startsWith(`${delim}challengeStatus`) ||
-      content.startsWith(`${delim}cs`)
-    ) {
-      const [_, name] = commandParser(content);
-      challengeStore
-        .specificChallengeStatus(name)
-        .then((challenge) => msg.channel.send(challenge))
-        .catch((e) =>
-          msg.channel.send(
-            new MessageEmbed()
-              .setTitle("ERROR!")
-              .setColor("#ad0000")
-              .setDescription(`Your last command failed: ${e.message}`)
-          )
-        );
-      return;
-    }
     if (content.startsWith(`${delim}`)) {
       throw new Error("Unknown Command");
     }
