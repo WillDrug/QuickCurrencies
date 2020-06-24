@@ -322,7 +322,7 @@ client.on("message", (msg) => {
 
     if (
       content.startsWith(`${delim}showChallenges`) ||
-      content.startsWith(`${delim}SC`)
+      content.startsWith(`${delim}sc`)
     ) {
       challengeStore.listChallenges(msg.channel);
       return;
@@ -330,15 +330,15 @@ client.on("message", (msg) => {
 
     if (
       content.startsWith(`${delim}donateToChallenge`) ||
-      content.startsWith(`${delim}DC`)
+      content.startsWith(`${delim}dc`)
     ) {
-      // =DC <DONATE AMOUNT> <CHALLENGE NAME>
+      // =dc <DONATE AMOUNT> <CHALLENGE NAME>
       const [_, amount_name_str] = commandParser(content);
 
       const split = amount_name_str.split(" ");
       if (split.length >= 2 && msg.member) {
-        const amount = split[0];
-        const name = split.slice(1).join(" ");
+        const amount = split[split.length - 1];
+        const name = split.slice(0, split.length - 1).join(" ");
         const numAmount = parseInt(amount);
         if (isNaN(numAmount)) throw new Error("Invalid Number");
         if (numAmount > 0) {
@@ -356,11 +356,9 @@ client.on("message", (msg) => {
                   //TODO EMBED!
                   msg.channel.send(
                     new MessageEmbed()
-                      .setTitle(
-                        `<$@${msg.member.id}> just donated to the ${name} challenge fund!`
-                      )
+                      .setTitle(`Donation to the ${name} challenge fund!`)
                       .setDescription(
-                        `<@${msg.member.id}> just donated ${amount} to the ${name} challenge fund!`
+                        `<@${msg.member.id}> just donated ${amount} ${settingsStore.settings.currencyName} to the ${name} challenge fund!`
                       )
                       .setImage(
                         "https://media.giphy.com/media/xTiTnqUxyWbsAXq7Ju/giphy.gif"
@@ -384,7 +382,7 @@ client.on("message", (msg) => {
         }
       } else {
         throw new Error(
-          "Invalid format, use =DC <DONATE AMOUNT> <CHALLENGE NAME>"
+          "Invalid format, use =dc <CHALLENGE NAME> <DONATE AMOUNT> "
         );
       }
       return;
@@ -392,7 +390,7 @@ client.on("message", (msg) => {
 
     if (
       content.startsWith(`${delim}challengeStatus`) ||
-      content.startsWith(`${delim}CS`)
+      content.startsWith(`${delim}cs`)
     ) {
       const [_, name] = commandParser(content);
       challengeStore

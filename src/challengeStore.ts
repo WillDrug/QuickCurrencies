@@ -51,7 +51,12 @@ export class ChallengeStore {
   ): Promise<MessageEmbed> {
     const [challengeId, challenge] = await this.getChallenge(challengeName);
     const percent = challenge.currentAmount / challenge.target;
-
+    console.log(
+      percent,
+      percent * 10,
+      Math.floor(percent * 10),
+      percentageMappings[Math.floor(percent * 10)]
+    );
     return new MessageEmbed()
       .setTitle("Challenge Status!")
       .setDescription(
