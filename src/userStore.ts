@@ -35,14 +35,14 @@ export class UserStore {
     save(this.store, this.diffQueue);
   }
 
-  public addBucks(uid: string, amount: number) {
+  public addBucks(uid: string, amount: number, from: string, to: string) {
     const currAmmount = this.store.get(uid);
     if (currAmmount) {
       this.store.set(uid, Math.round(currAmmount + amount));
     } else {
       this.store.set(uid, amount);
     }
-
+    logger.info(`${from} added ${amount} bucks to: ${to}`);
     this.diffQueue.push(uid);
   }
 
@@ -60,10 +60,15 @@ export class UserStore {
     return this.store.get(id) || 0;
   }
 
-  public makeItRain(amount: number, members: string[]) {
+  public makeItRain(amount: number, members: string[], from: string) {
     const bpp = amount / this.store.size;
     Array.from(members).forEach((id) => {
-      this.addBucks(id, bpp + Math.ceil(amount * 0.1 * Math.random()));
+      this.addBucks(
+        id,
+        Math.round(bpp + Math.ceil(amount * 0.1 * Math.random())),
+        from,
+        id
+      );
     });
   }
 
@@ -77,11 +82,11 @@ export class UserStore {
     return photos[Math.floor(Math.random() * photos.length)];
   }
 
-  public billAccount(id: string, amount: number) {
-    if (amount < 0){
-      throw new Error("Tried to bill negative")
+  public billAccount(id: string, amount: number, from: string, to: string) {
+    if (amount < 0) {
+      throw new Error("Tried to bill negative");
     }
-    this.addBucks(id, -amount);
+    this.addBucks(id, -amount, from, to);
   }
 
   public addPhoto(url: string, name?: string) {

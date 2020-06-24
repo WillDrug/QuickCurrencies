@@ -1,20 +1,29 @@
 import discord, {
   MessageEmbed,
   TextChannel,
-  
   DMChannel,
   NewsChannel,
+  GuildMemberManager,
 } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
 import { SettingsStore } from "./settingsStore";
 import { UserStore } from "./userStore";
-import { roleHandler, mentionHandler, emojiHandler, commandParser } from "./util";
-
-const settingsStore = new SettingsStore(); //TODO make me env var (dont be lazy scoot scoot)
+import { ChallengeStore } from "./challengeStore";
+import {
+  roleHandler,
+  mentionHandler,
+  emojiHandler,
+  commandParser,
+  givenMoney,
+} from "./util";
 
 const client = new discord.Client();
+const settingsStore = new SettingsStore(); //TODO make me env var (dont be lazy scoot scoot)
+
 const userStore = new UserStore();
+const challengeStore = new ChallengeStore();
+
 import logger from "./logger";
 const changeSuccessful = (
   channel: TextChannel | DMChannel | NewsChannel,
@@ -99,12 +108,11 @@ client.on("message", (msg) => {
         const space = photoString.indexOf(" ");
         let photoUrl;
         let name;
-        if (space == -1){
+        if (space == -1) {
           photoUrl = photoString;
-        }
-        else {
-          photoUrl = photoString.substr(0,space);
-          name = photoString.substr(space+1);
+        } else {
+          photoUrl = photoString.substr(0, space);
+          name = photoString.substr(space + 1);
         }
         userStore.addPhoto(photoUrl, name);
         msg.channel.send(
@@ -187,15 +195,17 @@ client.on("message", (msg) => {
       const [_, amount] = commandParser(content);
       const embed = new MessageEmbed()
         .setTitle("Made it rain!")
-        .setDescription(`<@${msg.member?.id}> made it rain with: ${amount}`);
+        .setDescription(`<@${msg.member?.id}> made it rain with: ${amount}`)
+        .setImage("https://media.giphy.com/media/4jh01W2g1qrbG/giphy.gif");
       const numAmount = parseInt(amount);
       if (isNaN(numAmount)) {
         throw new Error(`Cannot make it rain with ${amount}`);
       }
-      if (msg.guild) {
+      if (msg.guild && msg.member) {
         userStore.makeItRain(
           numAmount,
-          msg.guild.members.cache.map((m) => m.id)
+          msg.guild.members.cache.map((m) => m.id),
+          msg.member.displayName
         );
       }
 
@@ -203,11 +213,9 @@ client.on("message", (msg) => {
       return;
     }
     if (
-      content.startsWith(`${delim}giveMoney`) ||
-      content.startsWith(`${delim}gm`) 
+      content.startsWith(`${delim}gma`) ||
+      content.startsWith(`${delim}giveMoneyAdmin`)
     ) {
-
-      
       const [_, args] = commandParser(content);
       const arrayArgs = args.split(" ");
       const person = mentionHandler(arrayArgs[0])[0];
@@ -217,32 +225,73 @@ client.on("message", (msg) => {
       if (isNaN(numAmount)) {
         throw new Error("Invalid number");
       }
-      console.log(person, msg.content);
-      const hasRole = msg.member?.roles.cache.find((r) => r.id === settingsStore.settings.role)
+      logger.info(person, msg.content);
+      const hasRole = msg.member?.roles.cache.find(
+        (r) => r.id === settingsStore.settings.role
+      );
+
+      if (person && hasRole && msg.member) {
+        userStore.addBucks(person, numAmount, msg.member.id, person);
+        msg.channel.send(
+          givenMoney(
+            numAmount,
+            msg.member.id,
+            person,
+            settingsStore.settings.currencyName
+          )
+        );
+      }
+      return;
+    }
+    if (
+      content.startsWith(`${delim}giveMoney`) ||
+      content.startsWith(`${delim}gm`)
+    ) {
+      const [_, args] = commandParser(content);
+      const arrayArgs = args.split(" ");
+      const person = mentionHandler(arrayArgs[0])[0];
+
+      const amount = arrayArgs[1];
+      const numAmount = parseInt(amount);
+      if (isNaN(numAmount)) {
+        throw new Error("Invalid number");
+      }
+      logger.info(person, msg.content);
+      const hasRole = msg.member?.roles.cache.find(
+        (r) => r.id === settingsStore.settings.role
+      );
       if (person) {
-        if (!hasRole){// if not role giver then billem
-          if (msg.member){
-            if (!(userStore.getMyBalance(msg.member.id) >= numAmount)){
+        if (numAmount > 0) {
+          if (msg.member) {
+            if (!(userStore.getMyBalance(msg.member.id) >= numAmount)) {
               throw new Error("Insufficient Funds");
-            };
-            userStore.billAccount(msg.member.id, numAmount);
-          }
-        }
-        if (numAmount > 0 || hasRole) {//If amount > 0 or user has role(so they can bill whatever they want)
-          userStore.addBucks(person, numAmount);
-          msg.channel.send(
-            new MessageEmbed()
-              .setTitle(`${settingsStore.settings.currencyName} Aquired!`)
-              .setDescription(
-                `
-            <@${person}>! <@${msg.member?.id}> has given you ${amount} ${settingsStore.settings.currencyName}
-          `
+            }
+            userStore.addBucks(
+              person,
+              numAmount,
+              msg.member.displayName,
+              person
+            );
+            userStore.billAccount(
+              msg.member.id,
+              numAmount,
+              person,
+              msg.member.displayName
+            );
+            msg.channel.send(
+              givenMoney(
+                numAmount,
+                msg.member.id,
+                person,
+                settingsStore.settings.currencyName
               )
-          );
+            );
+          }
         }
       }
       return;
     }
+
     if (content.startsWith(`${delim}randomPhoto`)) {
       ///pick random photo from db and reduce funds.#
       if (
@@ -256,7 +305,9 @@ client.on("message", (msg) => {
           if (msg.member) {
             userStore.billAccount(
               msg.member.id,
-              settingsStore.settings.photoBill
+              settingsStore.settings.photoBill,
+              "Random Photo",
+              msg.member.displayName
             );
             msg.channel.send(embed);
           }
@@ -266,6 +317,95 @@ client.on("message", (msg) => {
           new MessageEmbed().setTitle("Insuffient Funds").setColor("#FF0000")
         );
       }
+      return;
+    }
+
+    if (
+      content.startsWith(`${delim}showChallenges`) ||
+      content.startsWith(`${delim}SC`)
+    ) {
+      challengeStore.listChallenges(msg.channel);
+      return;
+    }
+
+    if (
+      content.startsWith(`${delim}donateToChallenge`) ||
+      content.startsWith(`${delim}DC`)
+    ) {
+      // =DC <DONATE AMOUNT> <CHALLENGE NAME>
+      const [_, amount_name_str] = commandParser(content);
+
+      const split = amount_name_str.split(" ");
+      if (split.length >= 2 && msg.member) {
+        const amount = split[0];
+        const name = split.slice(1).join(" ");
+        const numAmount = parseInt(amount);
+        if (isNaN(numAmount)) throw new Error("Invalid Number");
+        if (numAmount > 0) {
+          if (userStore.getMyBalance(msg.member.id) >= numAmount) {
+            challengeStore
+              .addToChallenge(numAmount, name)
+              .then(() => {
+                if (msg.member) {
+                  userStore.billAccount(
+                    msg.member.id,
+                    numAmount,
+                    msg.member.displayName,
+                    name
+                  );
+                  //TODO EMBED!
+                  msg.channel.send(
+                    new MessageEmbed()
+                      .setTitle(
+                        `<$@${msg.member.id}> just donated to the ${name} challenge fund!`
+                      )
+                      .setDescription(
+                        `<@${msg.member.id}> just donated ${amount} to the ${name} challenge fund!`
+                      )
+                      .setImage(
+                        "https://media.giphy.com/media/xTiTnqUxyWbsAXq7Ju/giphy.gif"
+                      )
+                  );
+                  logger.info(
+                    `${msg.member.displayName} donated ${amount} to: ${name} Challenge!`
+                  );
+                }
+              })
+              .catch((e) => {
+                const errorEmbed = new MessageEmbed()
+                  .setTitle("ERROR!")
+                  .setColor("#ad0000")
+                  .setDescription(`Your last command failed: ${e.message}`);
+                msg.channel.send(errorEmbed);
+              });
+          } else {
+            throw new Error("Insufficient funds");
+          }
+        }
+      } else {
+        throw new Error(
+          "Invalid format, use =DC <DONATE AMOUNT> <CHALLENGE NAME>"
+        );
+      }
+      return;
+    }
+
+    if (
+      content.startsWith(`${delim}challengeStatus`) ||
+      content.startsWith(`${delim}CS`)
+    ) {
+      const [_, name] = commandParser(content);
+      challengeStore
+        .specificChallengeStatus(name)
+        .then((challenge) => msg.channel.send(challenge))
+        .catch((e) =>
+          msg.channel.send(
+            new MessageEmbed()
+              .setTitle("ERROR!")
+              .setColor("#ad0000")
+              .setDescription(`Your last command failed: ${e.message}`)
+          )
+        );
       return;
     }
     if (content.startsWith(`${delim}`)) {
@@ -301,20 +441,21 @@ client.on("messageReactionAdd", (reaction, user) => {
       reaction.emoji.name === settingsStore.settings.emoji) &&
     role
   ) {
-    if (reaction.message.member) {
+    if (reaction.message.member && member) {
       userStore.addBucks(
         reaction.message.member.id,
-        settingsStore.settings.currencyValue
+        settingsStore.settings.currencyValue,
+        member.displayName,
+        reaction.message.member.displayName
       );
-      const embed = new MessageEmbed()
-        .setTitle(`${settingsStore.settings.currencyName} Aquired!`)
-        .setDescription(
-          `
-          <@${reaction.message.member.id}>! <@${member?.id}> has given you ${settingsStore.settings.currencyValue} ${settingsStore.settings.currencyName}
-        `
-        );
-      reaction.message.channel.send(embed);
-      logger.info(`added bucks ${reaction.message.member.displayName}`);
+      reaction.message.channel.send(
+        givenMoney(
+          settingsStore.settings.currencyValue,
+          member.id,
+          reaction.message.member.id,
+          settingsStore.settings.currencyName
+        )
+      );
     }
   }
 });
