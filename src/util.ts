@@ -1,4 +1,5 @@
 import { MessageEmbed, Message } from "discord.js";
+import logger from "./logger";
 
 const roleRegex = /<@&(\d+)>/g;
 export const roleHandler = (src: string): string[] => {
@@ -44,3 +45,11 @@ export const givenMoney = (
 `
     )
     .setImage("https://media.giphy.com/media/YBsd8wdchmxqg/giphy.gif");
+
+
+export const errorEvent = (e:Error) => {
+    logger.error(e);
+    return new MessageEmbed()
+      .setTitle("ERROR!")
+      .setColor("#ad0000")
+      .setDescription(`Your last command failed: ${e.message}`);}

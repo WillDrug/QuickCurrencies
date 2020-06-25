@@ -16,10 +16,11 @@ import {
   emojiHandler,
   commandParser,
   givenMoney,
+  errorEvent,
 } from "./util";
 
 const client = new discord.Client();
-const settingsStore = new SettingsStore(); //TODO make me env var (dont be lazy scoot scoot)
+const settingsStore = new SettingsStore();
 
 const userStore = new UserStore();
 const challengeStore = new ChallengeStore();
@@ -96,13 +97,6 @@ client.on("message", (msg) => {
         return;
       }
 
-      if (content.startsWith(`${delim}triggerSave`)) {
-        userStore.saveToFireStore();
-        const embed = new MessageEmbed().setTitle("Saved");
-        msg.channel.send(embed);
-        return;
-      }
-
       if (content.startsWith(`${delim}addPhoto`)) {
         const [_, photoString] = commandParser(content);
         const space = photoString.indexOf(" ");
@@ -153,17 +147,21 @@ client.on("message", (msg) => {
       content.startsWith(`${delim}leaderboard`) ||
       content.startsWith(`${delim}lb`)
     ) {
-      const topTen = userStore.getTop(10);
-      const embed = new MessageEmbed()
-        .setTitle("The richest people in the guild!")
-        .setColor("#fc8c03")
-        .setDescription(
-          topTen.reduce(
-            (curr, record) => curr + `\n <@${record[0]}> | ${record[1]}`,
-            ""
-          )
-        );
-      msg.channel.send(embed);
+      userStore
+        .getTop(10)
+        .then((topTen) => {
+          const embed = new MessageEmbed()
+            .setTitle("The richest people in the guild!")
+            .setColor("#fc8c03")
+            .setDescription(
+              topTen.reduce(
+                (curr, record) => curr + `\n <@${record[0]}> | ${record[1]}`,
+                ""
+              )
+            );
+          msg.channel.send(embed);
+        })
+        .catch((e) => msg.channel.send(errorEvent(e)));
       return;
     }
     if (
@@ -171,16 +169,21 @@ client.on("message", (msg) => {
       content.startsWith(`${delim}b`)
     ) {
       if (msg.member) {
-        const embed = new MessageEmbed()
-          .setTitle(
-            `${msg.member.nickname || msg.member.displayName}'s Balance!`
-          )
-          .setDescription(
-            `You currently have: \n${userStore.getMyBalance(msg.member.id)}\n ${
-              settingsStore.settings.currencyName
-            }`
-          );
-        msg.channel.send(embed);
+        userStore
+          .getMyBalance(msg.member.id)
+          .then((balance) => {
+            if (msg.member) {
+              const embed = new MessageEmbed()
+                .setTitle(
+                  `${msg.member.nickname || msg.member.displayName}'s Balance!`
+                )
+                .setDescription(
+                  `You currently have: \n${balance}\n ${settingsStore.settings.currencyName}`
+                );
+              msg.channel.send(embed);
+            }
+          })
+          .catch((e) => msg.channel.send(errorEvent(e)));
         return;
       }
     }
@@ -193,23 +196,31 @@ client.on("message", (msg) => {
         ))
     ) {
       const [_, amount] = commandParser(content);
-      const embed = new MessageEmbed()
-        .setTitle("Made it rain!")
-        .setDescription(`<@${msg.member?.id}> made it rain with: ${amount}`)
-        .setImage("https://cdn.discordapp.com/attachments/710923737494716547/725745521683071000/image0.gif");
       const numAmount = parseInt(amount);
       if (isNaN(numAmount)) {
         throw new Error(`Cannot make it rain with ${amount}`);
       }
       if (msg.guild && msg.member) {
-        userStore.makeItRain(
-          numAmount,
-          msg.guild.members.cache.map((m) => m.id),
-          msg.member.displayName
-        );
+        userStore
+          .makeItRain(
+            numAmount,
+            msg.guild.members.cache.map((m) => m.id),
+            msg.member.displayName
+          )
+          .then(() => {
+            const embed = new MessageEmbed()
+              .setTitle("Made it rain!")
+              .setDescription(
+                `<@${msg.member?.id}> made it rain with: ${amount}`
+              )
+              .setImage(
+                "https://cdn.discordapp.com/attachments/710923737494716547/725745521683071000/image0.gif"
+              );
+            msg.channel.send(embed);
+          })
+          .catch((e) => msg.channel.send(errorEvent(e)));
       }
 
-      msg.channel.send(embed);
       return;
     }
     if (
@@ -231,15 +242,21 @@ client.on("message", (msg) => {
       );
 
       if (person && hasRole && msg.member) {
-        userStore.addBucks(person, numAmount, msg.member.id, person);
-        msg.channel.send(
-          givenMoney(
-            numAmount,
-            msg.member.id,
-            person,
-            settingsStore.settings.currencyName
-          )
-        );
+        userStore
+          .addBucks(person, numAmount, msg.member.id, person)
+          .then(() => {
+            if (msg.member) {
+              msg.channel.send(
+                givenMoney(
+                  numAmount,
+                  msg.member.id,
+                  person,
+                  settingsStore.settings.currencyName
+                )
+              );
+            }
+          })
+          .catch((e) => msg.channel.send(errorEvent(e)));
       }
       return;
     }
@@ -263,29 +280,36 @@ client.on("message", (msg) => {
       if (person) {
         if (numAmount > 0) {
           if (msg.member) {
-            if (!(userStore.getMyBalance(msg.member.id) >= numAmount)) {
-              throw new Error("Insufficient Funds");
-            }
-            userStore.addBucks(
-              person,
-              numAmount,
-              msg.member.displayName,
-              person
-            );
-            userStore.billAccount(
-              msg.member.id,
-              numAmount,
-              person,
-              msg.member.displayName
-            );
-            msg.channel.send(
-              givenMoney(
-                numAmount,
-                msg.member.id,
-                person,
-                settingsStore.settings.currencyName
+            const mem = msg.member;
+            userStore
+              .getMyBalance(mem.id)
+              .then((b) => {
+                if (!(b >= numAmount)) {
+                  throw new Error("Insufficient Funds");
+                }
+              })
+              .then(() =>
+                userStore.addBucks(person, numAmount, mem.displayName, person)
               )
-            );
+              .then(() => {
+                userStore.billAccount(
+                  mem.id,
+                  numAmount,
+                  person,
+                  mem.displayName
+                );
+              })
+              .then(() => {
+                msg.channel.send(
+                  givenMoney(
+                    numAmount,
+                    mem.id,
+                    person,
+                    settingsStore.settings.currencyName
+                  )
+                );
+              })
+              .catch((e) => msg.channel.send(errorEvent(e)));
           }
         }
       }
@@ -294,28 +318,34 @@ client.on("message", (msg) => {
 
     if (content.startsWith(`${delim}randomPhoto`)) {
       ///pick random photo from db and reduce funds.#
-      if (
-        msg.member &&
-        userStore.getMyBalance(msg.member.id) > settingsStore.settings.photoBill
-      ) {
-        userStore.getPhoto().then((p) => {
-          const embed = new MessageEmbed()
-            .setTitle(p.text || "Look at this photograph!")
-            .setImage(p.location);
-          if (msg.member) {
+
+      if (msg.member) {
+        const mem = msg.member;
+
+        userStore
+          .getMyBalance(msg.member.id)
+          .then((b) => {
+            if (b < settingsStore.settings.photoBill) {
+              throw new Error("Insufficient funds");
+            }
+          })
+          .then(() => userStore.getPhoto())
+          .then((p) => {
             userStore.billAccount(
-              msg.member.id,
+              mem.id,
               settingsStore.settings.photoBill,
               "Random Photo",
-              msg.member.displayName
+              mem.displayName
             );
-            msg.channel.send(embed);
-          }
-        });
-      } else {
-        msg.channel.send(
-          new MessageEmbed().setTitle("Insuffient Funds").setColor("#FF0000")
-        );
+            return p;
+          })
+          .then(async (p) => {
+            const embed = new MessageEmbed()
+              .setTitle(p.text || "Look at this photograph!")
+              .setImage(p.location);
+            await msg.channel.send(embed);
+          })
+          .catch((e) => msg.channel.send(errorEvent(e)));
       }
       return;
     }
@@ -352,48 +382,41 @@ client.on("message", (msg) => {
 
       const split = amount_name_str.split(" ");
       if (split.length >= 2 && msg.member) {
+        const member = msg.member;
         const amount = split[split.length - 1];
         const name = split.slice(0, split.length - 1).join(" ");
         const numAmount = parseInt(amount);
         if (isNaN(numAmount)) throw new Error("Invalid Number");
         if (numAmount > 0) {
-          if (userStore.getMyBalance(msg.member.id) >= numAmount) {
-            challengeStore
-              .addToChallenge(numAmount, name)
-              .then(() => {
-                if (msg.member) {
-                  userStore.billAccount(
-                    msg.member.id,
-                    numAmount,
-                    msg.member.displayName,
-                    name
-                  );
-                  //TODO EMBED!
-                  msg.channel.send(
-                    new MessageEmbed()
-                      .setTitle(`Donation to the ${name} challenge fund!`)
-                      .setDescription(
-                        `<@${msg.member.id}> just donated ${amount} ${settingsStore.settings.currencyName} to the ${name} challenge fund!`
-                      )
-                      .setImage(
-                        "https://media.giphy.com/media/xTiTnqUxyWbsAXq7Ju/giphy.gif"
-                      )
-                  );
-                  logger.info(
-                    `${msg.member.displayName} donated ${amount} to: ${name} Challenge!`
-                  );
-                }
-              })
-              .catch((e) => {
-                const errorEmbed = new MessageEmbed()
-                  .setTitle("ERROR!")
-                  .setColor("#ad0000")
-                  .setDescription(`Your last command failed: ${e.message}`);
-                msg.channel.send(errorEmbed);
-              });
-          } else {
-            throw new Error("Insufficient funds");
-          }
+          userStore
+            .getMyBalance(member.id)
+            .then((b) => {
+              if (b < numAmount) throw new Error("Insufficient funds");
+            })
+            .then(() => challengeStore.addToChallenge(numAmount, name))
+            .then(() => {
+              userStore.billAccount(
+                member.id,
+                numAmount,
+                member.displayName,
+                name
+              );
+
+              msg.channel.send(
+                new MessageEmbed()
+                  .setTitle(`Donation to the ${name} challenge fund!`)
+                  .setDescription(
+                    `<@${member.id}> just donated ${amount} ${settingsStore.settings.currencyName} to the ${name} challenge fund!`
+                  )
+                  .setImage(
+                    "https://media.giphy.com/media/xTiTnqUxyWbsAXq7Ju/giphy.gif"
+                  )
+              );
+              logger.info(
+                `${member.displayName} donated ${amount} to: ${name} Challenge!`
+              );
+            })
+            .catch((e) => msg.channel.send(errorEvent(e)));
         }
       } else {
         throw new Error(
@@ -407,11 +430,7 @@ client.on("message", (msg) => {
       throw new Error("Unknown Command");
     }
   } catch (e) {
-    const errorEmbed = new MessageEmbed()
-      .setTitle("ERROR!")
-      .setColor("#ad0000")
-      .setDescription(`Your last command failed: ${e.message}`);
-    msg.channel.send(errorEmbed);
+    msg.channel.send(errorEvent(e));
   }
 });
 

@@ -2,74 +2,56 @@ import logger from "./logger";
 import { db } from "./dbConnection";
 const COLLECTION_NAME = "members";
 
-const save = (store: Map<string, number>, diffQueue: string[]) => {
-  diffQueue.forEach((uid) => {
-    const val = store.get(uid);
-    if (val) {
-      db.collection(COLLECTION_NAME).doc(uid).set({ currency: val });
-    }
-  });
-  diffQueue.splice(0, diffQueue.length);
-  logger.info("Saved to db");
-};
-
 export class UserStore {
-  private store: Map<string, number> = new Map();
-  private diffQueue: string[] = [];
   constructor() {
     // pull state out of firestore and save here.
-    db.collection(COLLECTION_NAME)
-      .get()
-      .then((snapshot) => {
-        snapshot.forEach((doc) => {
-          this.store.set(doc.id, doc.data().currency);
-        });
-      });
-    setInterval(
-      () => save(this.store, this.diffQueue),
-      parseInt(process.env.SAVE_INTERVAL_MS || (5 * 60 * 1000).toString())
-    );
   }
 
-  public saveToFireStore() {
-    save(this.store, this.diffQueue);
-  }
-
-  public addBucks(uid: string, amount: number, from: string, to: string) {
-    const currAmmount = this.store.get(uid);
+  public async addBucks(uid: string, amount: number, from: string, to: string) {
+    const currAmmount = (await db.collection(COLLECTION_NAME).doc(uid).get()).data();
+    let endAmm;
     if (currAmmount) {
-      this.store.set(uid, Math.round(currAmmount + amount));
+      endAmm = Math.round((currAmmount.currency) + amount);
     } else {
-      this.store.set(uid, amount);
+      endAmm = amount 
     }
+    await db.collection(COLLECTION_NAME).doc(uid).set({ currency: endAmm }, {merge: true});
     logger.info(`${from} added ${amount} bucks to: ${to}`);
-    this.diffQueue.push(uid);
+
   }
 
-  public getTop(n: number) {
-    const sorted = Array.from(this.store.entries()).sort((a, b) => {
-      if (a[1] > b[1]) return -1;
-      if (a[1] < b[1]) return 1;
-      return 0;
-    });
+  public async getTop(n: number): Promise<[string, number][]> {
+      const snapshot = await db.collection(COLLECTION_NAME).orderBy("currency", "desc").limit(n).get();
 
-    return sorted.slice(0, n);
+   
+      const status:[string,number][] = [];
+        snapshot.forEach((sample) => {
+            const data = sample.data()
+            status.push([sample.id,data.currency])
+        })
+
+      return status
   }
 
-  public getMyBalance(id: string): number {
-    return this.store.get(id) || 0;
+  public async getMyBalance(id: string): Promise<number> {
+    const d = await db.collection(COLLECTION_NAME).doc(id).get();
+      const data = d.data() 
+      if (d.exists && data){
+        return data.currency
+      }
+      throw new Error("Invalid Id");
   }
 
-  public makeItRain(amount: number, members: string[], from: string) {
-    const bpp = amount / this.store.size;
-    Array.from(members).forEach((id) => {
+  public async makeItRain(amount: number, members: string[], from: string) {
+    const bpp = amount / members.length;
+    await Promise.all(Array.from(members).map((id) => 
       this.addBucks(
         id,
-        Math.round(bpp + Math.ceil(amount * 0.1 * Math.random())),
+        Math.round(bpp + Math.ceil(bpp * 0.1 * Math.random())),
         from,
         id
-      );
-    });
+      )
+    ));
   }
 
   public async getPhoto(): Promise<{ location: string; text?: string }> {
@@ -82,11 +64,11 @@ export class UserStore {
     return photos[Math.floor(Math.random() * photos.length)];
   }
 
-  public billAccount(id: string, amount: number, from: string, to: string) {
+  public async billAccount(id: string, amount: number, from: string, to: string) {
     if (amount < 0) {
       throw new Error("Tried to bill negative");
     }
-    this.addBucks(id, -amount, from, to);
+    await this.addBucks(id, -amount, from, to);
   }
 
   public addPhoto(url: string, name?: string) {
