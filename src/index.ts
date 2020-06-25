@@ -187,7 +187,7 @@ client.on("message", (msg) => {
 
     if (
       content.startsWith(`${delim}makeItRain`) ||
-      (content.startsWith(`${delim}MIR`) &&
+      (content.startsWith(`${delim}mir`) &&
         msg.member?.roles.cache.find(
           (role) => role.id === settingsStore.settings.role
         ))
@@ -196,7 +196,7 @@ client.on("message", (msg) => {
       const embed = new MessageEmbed()
         .setTitle("Made it rain!")
         .setDescription(`<@${msg.member?.id}> made it rain with: ${amount}`)
-        .setImage("https://media.giphy.com/media/4jh01W2g1qrbG/giphy.gif");
+        .setImage("https://cdn.discordapp.com/attachments/710923737494716547/725745521683071000/image0.gif");
       const numAmount = parseInt(amount);
       if (isNaN(numAmount)) {
         throw new Error(`Cannot make it rain with ${amount}`);
