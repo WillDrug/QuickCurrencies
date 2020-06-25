@@ -24,6 +24,9 @@ const percentageMappings = [
   "https://media.discordapp.net/attachments/711291510414376970/725425351223934996/Progress_Bar_100.png",
 ];
 
+const OVERFLOW_IMAGE =
+  "https://cdn.discordapp.com/attachments/711291510414376970/725766604125896734/Progress_Bar_Overfill.png";
+
 export class ChallengeStore {
   constructor() {}
 
@@ -51,12 +54,6 @@ export class ChallengeStore {
   ): Promise<MessageEmbed> {
     const [challengeId, challenge] = await this.getChallenge(challengeName);
     const percent = challenge.currentAmount / challenge.target;
-    console.log(
-      percent,
-      percent * 10,
-      Math.floor(percent * 10),
-      percentageMappings[Math.floor(percent * 10)]
-    );
     return new MessageEmbed()
       .setTitle("Challenge Status!")
       .setDescription(
@@ -64,7 +61,11 @@ export class ChallengeStore {
           percent * 100
         )}% \`[${challenge.currentAmount}/${challenge.target}]\``
       )
-      .setImage(percentageMappings[Math.floor(percent * 10)]);
+      .setImage(
+        percent >= 1
+          ? OVERFLOW_IMAGE
+          : percentageMappings[Math.floor(percent * 10)]
+      );
   }
 
   private async getChallenge(
