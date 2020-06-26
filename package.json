@@ -1,5 +1,5 @@
 {
-  "name": "LoveableLeaderboards",
+  "name": "QuickCurrencies",
   "version": "1.0.0",
   "description": "discord.js based leaderboards for dispensing currency",
   "main": "lib/index.js",
