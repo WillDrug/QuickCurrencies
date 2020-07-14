@@ -85,8 +85,9 @@ export class UserStore {
     await this.addBucks(id, -amount, from, to);
   }
 
-  public addPhoto(url: string, name?: string) {
-    db.collection("images")
+  public async addPhoto(url: string, name?: string) {
+    await db
+      .collection("images")
       .doc()
       .set(name ? { location: url, text: name } : { location: url });
   }

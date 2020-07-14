@@ -1,4 +1,10 @@
-import { MessageEmbed, Message } from "discord.js";
+import {
+  MessageEmbed,
+  Message,
+  TextChannel,
+  DMChannel,
+  NewsChannel,
+} from "discord.js";
 import logger from "./logger";
 
 const roleRegex = /<@&(\d+)>/g;
@@ -19,6 +25,7 @@ export const emojiHandler = (emojiString: string): string => {
 
 export const commandParser = (cmd: string): [string, string] => {
   const spaceLocation = cmd.indexOf(" ");
+  if (spaceLocation < 0) return [cmd, ""];
   const emote = cmd.substr(spaceLocation + 1);
   const command = cmd.substr(0, spaceLocation);
   return [command, emote];
@@ -46,10 +53,23 @@ export const givenMoney = (
     )
     .setImage("https://media.giphy.com/media/YBsd8wdchmxqg/giphy.gif");
 
+export const errorEvent = (e: Error) => {
+  logger.error(e);
+  return new MessageEmbed()
+    .setTitle("ERROR!")
+    .setColor("#ad0000")
+    .setDescription(`Your last command failed: ${e.message}`);
+};
 
-export const errorEvent = (e:Error) => {
-    logger.error(e);
-    return new MessageEmbed()
-      .setTitle("ERROR!")
-      .setColor("#ad0000")
-      .setDescription(`Your last command failed: ${e.message}`);}
+export const changeSuccessful = (
+  channel: TextChannel | DMChannel | NewsChannel,
+  fieldName: string,
+  givenValue: string,
+  originalValue: string
+): void => {
+  const embed = new MessageEmbed()
+    .setTitle("Update Successful!")
+    .setColor("#20fc03")
+    .setDescription(`*${fieldName}:* \n ${originalValue} => ${givenValue}`);
+  channel.send(embed);
+};

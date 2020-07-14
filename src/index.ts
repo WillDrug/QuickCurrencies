@@ -1,23 +1,23 @@
-import discord, {
-  MessageEmbed,
-  TextChannel,
-  DMChannel,
-  NewsChannel,
-  GuildMemberManager,
-} from "discord.js";
+import discord, { MessageEmbed } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
+
 import { SettingsStore } from "./settingsStore";
 import { UserStore } from "./userStore";
 import { ChallengeStore } from "./challengeStore";
+import logger from "./logger";
+
 import {
   roleHandler,
-  mentionHandler,
   emojiHandler,
   commandParser,
   givenMoney,
   errorEvent,
+  changeSuccessful,
 } from "./util";
+
+import { commandsByAlias } from "./commands";
+import express from "express";
 
 const client = new discord.Client();
 const settingsStore = new SettingsStore();
@@ -25,409 +25,116 @@ const settingsStore = new SettingsStore();
 const userStore = new UserStore();
 const challengeStore = new ChallengeStore();
 
-import logger from "./logger";
-const changeSuccessful = (
-  channel: TextChannel | DMChannel | NewsChannel,
-  fieldName: string,
-  givenValue: string,
-  originalValue: string
-): void => {
-  const embed = new MessageEmbed()
-    .setTitle("Update Successful!")
-    .setColor("#20fc03")
-    .setDescription(`*${fieldName}:* \n ${originalValue} => ${givenValue}`);
-  channel.send(embed);
-};
-client.on("message", (msg) => {
+logger.info(commandsByAlias);
+
+client.on("message", async (msg) => {
   const delim = settingsStore.settings.delim;
   const { content } = msg;
   const settingsCopy = { ...settingsStore.settings };
   try {
-    if (msg.member?.permissions.has("ADMINISTRATOR")) {
-      // User is admin (should probably be configurable)
-      if (content.startsWith(`${delim}setRole`)) {
-        //roles should really be array.
-        //user set role. check that they have required perms!
-        const roles = roleHandler(content);
-        settingsStore.setRole(roles[0]); //unsafe, start using yup.
-        logger.info(settingsStore.settings.role);
+    if (content.startsWith(delim)) {
+      if (msg.member?.permissions.has("ADMINISTRATOR")) {
+        // User is admin (should probably be configurable)
+        if (content.startsWith(`${delim}setRole`)) {
+          //roles should really be array.
+          //user set role. check that they have required perms!
+          const roles = roleHandler(content);
+          settingsStore.setRole(roles[0]); //unsafe, start using yup.
+          logger.info(settingsStore.settings.role);
 
-        changeSuccessful(msg.channel, "Role", roles[0], settingsCopy.role);
-        return;
-      }
-
-      if (content.startsWith(`${delim}setDelim`)) {
-        const [_, newDelim] = commandParser(content);
-        settingsStore.setDelim(newDelim);
-        changeSuccessful(msg.channel, "Delim", newDelim, settingsCopy.delim);
-        return;
-      }
-
-      if (content.startsWith(`${delim}setEmote`)) {
-        const [_, emote] = commandParser(content);
-        settingsStore.setEmoji(emojiHandler(emote));
-        logger.info(settingsStore.settings.emoji);
-        changeSuccessful(msg.channel, "Emote", emote, settingsCopy.emoji);
-        return;
-      }
-      if (content.startsWith(`${delim}setCurrencyValue`)) {
-        const [_, val] = commandParser(content);
-        const numVal = parseInt(val);
-        if (isNaN(numVal)) {
-          throw new Error(`Cannot set currency to ${val}`);
-        }
-        settingsStore.setCurrencyValue(numVal);
-        changeSuccessful(
-          msg.channel,
-          "Currency Value",
-          val,
-          settingsCopy.currencyValue.toString()
-        );
-        return;
-      }
-      if (content.startsWith(`${delim}setCurrencyName`)) {
-        const [_, name] = commandParser(content);
-        settingsStore.setCurrencyName(name);
-        changeSuccessful(
-          msg.channel,
-          "Currency Name",
-          name,
-          settingsCopy.currencyName
-        );
-        return;
-      }
-
-      if (content.startsWith(`${delim}addPhoto`)) {
-        const [_, photoString] = commandParser(content);
-        const space = photoString.indexOf(" ");
-        let photoUrl;
-        let name;
-        if (space == -1) {
-          photoUrl = photoString;
-        } else {
-          photoUrl = photoString.substr(0, space);
-          name = photoString.substr(space + 1);
-        }
-        userStore.addPhoto(photoUrl, name);
-        msg.channel.send(
-          new MessageEmbed().setTitle("Photo Added").setImage(photoUrl)
-        );
-        return;
-      }
-      if (content.startsWith(`${delim}setPhotoPrice`)) {
-        const [_, price] = commandParser(content);
-        const numPrice = parseInt(price);
-
-        if (isNaN(numPrice)) {
-          throw new Error(`Price ${price} is not accpetable`);
+          changeSuccessful(msg.channel, "Role", roles[0], settingsCopy.role);
+          return;
         }
 
-        settingsStore.setPhotoPrice(numPrice);
-        changeSuccessful(
-          msg.channel,
-          "Photo Price",
-          numPrice.toString(),
-          settingsCopy.photoBill.toString()
-        );
-        return;
-      }
-    }
-    if (content.startsWith(`${delim}getSettings`)) {
-      const clonedSettings = { ...settingsStore.settings };
-      clonedSettings.role = `<@&${clonedSettings.role}>`;
-      clonedSettings.emoji = `<:${clonedSettings.emoji}:>`;
-      const embed = new MessageEmbed()
-        .setTitle("Current QuickCurrency Settings:")
-        .setColor("#e5ff00")
-        .setDescription(JSON.stringify(clonedSettings, null, 2));
-      msg.channel.send(embed);
-      return;
-    }
-    if (
-      content.startsWith(`${delim}leaderboard`) ||
-      content.startsWith(`${delim}lb`)
-    ) {
-      userStore
-        .getTop(10)
-        .then((topTen) => {
-          const embed = new MessageEmbed()
-            .setTitle("The richest people in the guild!")
-            .setColor("#fc8c03")
-            .setDescription(
-              topTen.reduce(
-                (curr, record) => curr + `\n <@${record[0]}> | ${record[1]}`,
-                ""
-              )
-            );
-          msg.channel.send(embed);
-        })
-        .catch((e) => msg.channel.send(errorEvent(e)));
-      return;
-    }
-    if (
-      content.startsWith(`${delim}mybalance`) ||
-      content.startsWith(`${delim}b`)
-    ) {
-      if (msg.member) {
-        userStore
-          .getMyBalance(msg.member.id)
-          .then((balance) => {
-            if (msg.member) {
-              const embed = new MessageEmbed()
-                .setTitle(
-                  `${msg.member.nickname || msg.member.displayName}'s Balance!`
-                )
-                .setDescription(
-                  `You currently have: \n${balance}\n ${settingsStore.settings.currencyName}`
-                );
-              msg.channel.send(embed);
-            }
-          })
-          .catch((e) => msg.channel.send(errorEvent(e)));
-        return;
-      }
-    }
+        if (content.startsWith(`${delim}setDelim`)) {
+          const [_, newDelim] = commandParser(content);
+          settingsStore.setDelim(newDelim);
+          changeSuccessful(msg.channel, "Delim", newDelim, settingsCopy.delim);
+          return;
+        }
 
-    if (
-      content.startsWith(`${delim}makeItRain`) ||
-      (content.startsWith(`${delim}mir`) &&
-        msg.member?.roles.cache.find(
-          (role) => role.id === settingsStore.settings.role
-        ))
-    ) {
-      const [_, amount] = commandParser(content);
-      const numAmount = parseInt(amount);
-      if (isNaN(numAmount)) {
-        throw new Error(`Cannot make it rain with ${amount}`);
-      }
-      if (msg.guild && msg.member) {
-        userStore
-          .makeItRain(
-            numAmount,
-            msg.guild.members.cache.map((m) => m.id),
-            msg.member.displayName
-          )
-          .then(() => {
-            const embed = new MessageEmbed()
-              .setTitle("Made it rain!")
-              .setDescription(
-                `<@${msg.member?.id}> made it rain with: ${amount}`
-              )
-              .setImage(
-                "https://cdn.discordapp.com/attachments/710923737494716547/725745521683071000/image0.gif"
-              );
-            msg.channel.send(embed);
-          })
-          .catch((e) => msg.channel.send(errorEvent(e)));
-      }
-
-      return;
-    }
-    if (
-      content.startsWith(`${delim}gma`) ||
-      content.startsWith(`${delim}giveMoneyAdmin`)
-    ) {
-      const [_, args] = commandParser(content);
-      const arrayArgs = args.split(" ");
-      const person = mentionHandler(arrayArgs[0])[0];
-
-      const amount = arrayArgs[1];
-      const numAmount = parseInt(amount);
-      if (isNaN(numAmount)) {
-        throw new Error("Invalid number");
-      }
-      logger.info(person, msg.content);
-      const hasRole = msg.member?.roles.cache.find(
-        (r) => r.id === settingsStore.settings.role
-      );
-
-      if (person && hasRole && msg.member) {
-        userStore
-          .addBucks(person, numAmount, msg.member.id, person)
-          .then(() => {
-            if (msg.member) {
-              msg.channel.send(
-                givenMoney(
-                  numAmount,
-                  msg.member.id,
-                  person,
-                  settingsStore.settings.currencyName
-                )
-              );
-            }
-          })
-          .catch((e) => msg.channel.send(errorEvent(e)));
-      }
-      return;
-    }
-    if (
-      content.startsWith(`${delim}giveMoney`) ||
-      content.startsWith(`${delim}gm`)
-    ) {
-      const [_, args] = commandParser(content);
-      const arrayArgs = args.split(" ");
-      const person = mentionHandler(arrayArgs[0])[0];
-
-      const amount = arrayArgs[1];
-      const numAmount = parseInt(amount);
-      if (isNaN(numAmount)) {
-        throw new Error("Invalid number");
-      }
-      logger.info(person, msg.content);
-      const hasRole = msg.member?.roles.cache.find(
-        (r) => r.id === settingsStore.settings.role
-      );
-      if (person) {
-        if (numAmount > 0) {
-          if (msg.member) {
-            const mem = msg.member;
-            userStore
-              .getMyBalance(mem.id)
-              .then((b) => {
-                if (!(b >= numAmount)) {
-                  throw new Error("Insufficient Funds");
-                }
-              })
-              .then(() =>
-                userStore.addBucks(person, numAmount, mem.displayName, person)
-              )
-              .then(() => {
-                userStore.billAccount(
-                  mem.id,
-                  numAmount,
-                  person,
-                  mem.displayName
-                );
-              })
-              .then(() => {
-                msg.channel.send(
-                  givenMoney(
-                    numAmount,
-                    mem.id,
-                    person,
-                    settingsStore.settings.currencyName
-                  )
-                );
-              })
-              .catch((e) => msg.channel.send(errorEvent(e)));
+        if (content.startsWith(`${delim}setEmote`)) {
+          const [_, emote] = commandParser(content);
+          settingsStore.setEmoji(emojiHandler(emote));
+          logger.info(settingsStore.settings.emoji);
+          changeSuccessful(msg.channel, "Emote", emote, settingsCopy.emoji);
+          return;
+        }
+        if (content.startsWith(`${delim}setCurrencyValue`)) {
+          const [_, val] = commandParser(content);
+          const numVal = parseInt(val);
+          if (isNaN(numVal)) {
+            throw new Error(`Cannot set currency to ${val}`);
           }
-        }
-      }
-      return;
-    }
-
-    if (content.startsWith(`${delim}randomPhoto`)) {
-      ///pick random photo from db and reduce funds.#
-
-      if (msg.member) {
-        const mem = msg.member;
-
-        userStore
-          .getMyBalance(msg.member.id)
-          .then((b) => {
-            if (b < settingsStore.settings.photoBill) {
-              throw new Error("Insufficient funds");
-            }
-          })
-          .then(() => userStore.getPhoto())
-          .then((p) => {
-            userStore.billAccount(
-              mem.id,
-              settingsStore.settings.photoBill,
-              "Random Photo",
-              mem.displayName
-            );
-            return p;
-          })
-          .then(async (p) => {
-            const embed = new MessageEmbed()
-              .setTitle(p.text || "Look at this photograph!")
-              .setImage(p.location);
-            await msg.channel.send(embed);
-          })
-          .catch((e) => msg.channel.send(errorEvent(e)));
-      }
-      return;
-    }
-
-    if (
-      content.startsWith(`${delim}showChallenges`) ||
-      content.startsWith(`${delim}sc`)
-    ) {
-      const [_, name] = commandParser(content);
-      if (name != `${delim}sc`) {
-        challengeStore
-          .specificChallengeStatus(name)
-          .then((challenge) => msg.channel.send(challenge))
-          .catch((e) =>
-            msg.channel.send(
-              new MessageEmbed()
-                .setTitle("ERROR!")
-                .setColor("#ad0000")
-                .setDescription(`Your last command failed: ${e.message}`)
-            )
+          settingsStore.setCurrencyValue(numVal);
+          changeSuccessful(
+            msg.channel,
+            "Currency Value",
+            val,
+            settingsCopy.currencyValue.toString()
           );
-      } else {
-        challengeStore.listChallenges(msg.channel);
-      }
-      return;
-    }
-
-    if (
-      content.startsWith(`${delim}donateToChallenge`) ||
-      content.startsWith(`${delim}dc`)
-    ) {
-      // =dc <DONATE AMOUNT> <CHALLENGE NAME>
-      const [_, amount_name_str] = commandParser(content);
-
-      const split = amount_name_str.split(" ");
-      if (split.length >= 2 && msg.member) {
-        const member = msg.member;
-        const amount = split[split.length - 1];
-        const name = split.slice(0, split.length - 1).join(" ");
-        const numAmount = parseInt(amount);
-        if (isNaN(numAmount)) throw new Error("Invalid Number");
-        if (numAmount > 0) {
-          userStore
-            .getMyBalance(member.id)
-            .then((b) => {
-              if (b < numAmount) throw new Error("Insufficient funds");
-            })
-            .then(() => challengeStore.addToChallenge(numAmount, name))
-            .then(() => {
-              userStore.billAccount(
-                member.id,
-                numAmount,
-                member.displayName,
-                name
-              );
-
-              msg.channel.send(
-                new MessageEmbed()
-                  .setTitle(`Donation to the ${name} challenge fund!`)
-                  .setDescription(
-                    `<@${member.id}> just donated ${amount} ${settingsStore.settings.currencyName} to the ${name} challenge fund!`
-                  )
-                  .setImage(
-                    "https://media.giphy.com/media/xTiTnqUxyWbsAXq7Ju/giphy.gif"
-                  )
-              );
-              logger.info(
-                `${member.displayName} donated ${amount} to: ${name} Challenge!`
-              );
-            })
-            .catch((e) => msg.channel.send(errorEvent(e)));
+          return;
         }
-      } else {
-        throw new Error(
-          "Invalid format, use =dc <CHALLENGE NAME> <DONATE AMOUNT> "
-        );
-      }
-      return;
-    }
+        if (content.startsWith(`${delim}setCurrencyName`)) {
+          const [_, name] = commandParser(content);
+          settingsStore.setCurrencyName(name);
+          changeSuccessful(
+            msg.channel,
+            "Currency Name",
+            name,
+            settingsCopy.currencyName
+          );
+          return;
+        }
+        if (content.startsWith(`${delim}setPhotoPrice`)) {
+          const [_, price] = commandParser(content);
+          const numPrice = parseInt(price);
 
-    if (content.startsWith(`${delim}`)) {
-      throw new Error("Unknown Command");
+          if (isNaN(numPrice)) {
+            throw new Error(`Price ${price} is not accpetable`);
+          }
+
+          settingsStore.setPhotoPrice(numPrice);
+          changeSuccessful(
+            msg.channel,
+            "Photo Price",
+            numPrice.toString(),
+            settingsCopy.photoBill.toString()
+          );
+          return;
+        }
+      }
+
+      const [fullCommand, body] = commandParser(content);
+      const cmd = fullCommand.substr(1);
+
+      if (commandsByAlias[cmd]) {
+        const command = commandsByAlias[cmd];
+
+        if (
+          command.requiresRole &&
+          !msg.member?.roles.cache.find(
+            (r) => r.id === settingsStore.settings.role
+          )
+        ) {
+          throw new Error("Unauthorized");
+        }
+
+        if (
+          command.permissions &&
+          command.permissions.length > 0 &&
+          !command.permissions.every((p) => msg.member?.permissions.has(p))
+        ) {
+          throw new Error("Invalid Permissions");
+        }
+        await command.func(
+          body,
+          { userStore, challengeStore, settingsStore },
+          msg
+        );
+      } else {
+        throw new Error("Unknown command");
+      }
     }
   } catch (e) {
     msg.channel.send(errorEvent(e));
@@ -474,8 +181,6 @@ client.on("messageReactionAdd", (reaction, user) => {
   }
 });
 client.login(process.env.DISCORD_TOKEN);
-
-import express from "express";
 
 const app = express();
 app.get("/", (req: any, res: any) => res.send("You have found the secret"));
