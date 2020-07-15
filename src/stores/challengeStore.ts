@@ -1,6 +1,6 @@
 import { TextChannel, MessageEmbed, DMChannel, NewsChannel } from "discord.js";
-import { db } from "./dbConnection";
-import logger from "./logger";
+import { db } from "../dbConnection";
+import logger from "../logger";
 const CHALLENGE_COLLECTION = "challenge";
 
 export interface Challenge {

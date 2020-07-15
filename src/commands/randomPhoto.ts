@@ -1,7 +1,4 @@
 import { Message, MessageEmbed } from "discord.js";
-import { UserStore } from "../userStore";
-import { SettingsStore } from "../settingsStore";
-import { errorEvent } from "../util";
 import { Stores } from "../types";
 
 export const randomPhoto = async (

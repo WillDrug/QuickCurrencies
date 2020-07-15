@@ -1,7 +1,4 @@
-import { Message, MessageEmbed } from "discord.js";
-import { SettingsStore } from "../../settingsStore";
-import { commandParser } from "../../util";
-import { ChallengeStore } from "../../challengeStore";
+import { Message } from "discord.js";
 import { Stores } from "../../types";
 
 export const showChallenges = async (

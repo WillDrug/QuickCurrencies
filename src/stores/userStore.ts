@@ -1,5 +1,5 @@
-import logger from "./logger";
-import { db } from "./dbConnection";
+import logger from "../logger";
+import { db } from "../dbConnection";
 const COLLECTION_NAME = "members";
 
 export class UserStore {

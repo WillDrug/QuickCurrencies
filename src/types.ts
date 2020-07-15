@@ -1,7 +1,7 @@
 import { Message, Permissions, PermissionResolvable } from "discord.js";
-import { SettingsStore } from "./settingsStore";
-import { ChallengeStore } from "./challengeStore";
-import { UserStore } from "./userStore";
+import { SettingsStore } from "./stores/settingsStore";
+import { ChallengeStore } from "./stores/challengeStore";
+import { UserStore } from "./stores/userStore";
 export interface Stores {
   settingsStore: SettingsStore;
   challengeStore: ChallengeStore;

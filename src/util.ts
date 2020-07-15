@@ -62,14 +62,11 @@ export const errorEvent = (e: Error) => {
 };
 
 export const changeSuccessful = (
-  channel: TextChannel | DMChannel | NewsChannel,
   fieldName: string,
   givenValue: string,
   originalValue: string
-): void => {
-  const embed = new MessageEmbed()
+) =>
+  new MessageEmbed()
     .setTitle("Update Successful!")
     .setColor("#20fc03")
     .setDescription(`*${fieldName}:* \n ${originalValue} => ${givenValue}`);
-  channel.send(embed);
-};

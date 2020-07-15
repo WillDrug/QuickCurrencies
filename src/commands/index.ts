@@ -10,12 +10,15 @@ import { showChallenges } from "./challenges/showChallengers";
 import { donateToChallenge } from "./challenges/donateToChallenge";
 import { addPhoto } from "./addPhoto";
 import { helpCommand } from "./help";
+import { settings } from "./settings";
+
 const baseCommands: CommandSystem = {
   settings: {
-    alias: ["s"],
-    description: "Control settings of Quick Currenies on this server",
-    usage: "=settings <setting name> <value>",
-    func: async () => {},
+    alias: ["set"],
+    description:
+      "Control settings of Quick Currenies on this server, use =getSettings to show valid settings",
+    usage: "=settings <settingName> <value>",
+    func: settings,
     permissions: ["ADMINISTRATOR"],
   },
   gm: {

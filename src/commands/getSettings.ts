@@ -1,5 +1,4 @@
 import { Message, MessageEmbed } from "discord.js";
-import { SettingsStore } from "../settingsStore";
 import { Stores } from "../types";
 
 export const getSettings = async (

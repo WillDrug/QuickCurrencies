@@ -1,7 +1,6 @@
 import { Message } from "discord.js";
-import { commandParser, errorEvent, mentionHandler, givenMoney } from "../util";
-import { SettingsStore } from "../settingsStore";
-import { UserStore } from "../userStore";
+import { mentionHandler, givenMoney } from "../util";
+
 import logger from "../logger";
 import { Stores } from "../types";
 
