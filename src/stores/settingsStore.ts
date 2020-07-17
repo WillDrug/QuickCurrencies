@@ -8,26 +8,29 @@ export interface Settings {
   currencyValue: number;
   currencyName: string;
   photoBill: number;
+  backgroundAmount: number;
 }
 export class SettingsStore {
   public settings: Settings;
 
   constructor() {
-    this.settings = {
+    const settings = {
       role: "",
       emoji: "",
       delim: "",
       currencyValue: 1,
       currencyName: "",
       photoBill: 1,
+      backgroundAmount: 10,
     };
+    this.settings = settings;
     db.collection("settings")
       .doc("catscafe")
       .get()
       .then((d) => {
         const s = d.data();
         logger.info({ msg: "Loaded settings:", s });
-        this.setSettingsAfterLoad(s);
+        this.setSettingsAfterLoad({ ...settings, ...s });
       });
   }
   private setSettingsAfterLoad(s: any) {
@@ -45,5 +48,18 @@ export class SettingsStore {
   public async setSettings(settings: Settings) {
     this.settings = settings;
     await this.saveStore();
+  }
+
+  public async getAllSettings(): Promise<
+    { backgroundAmount: number; guildId: string }[]
+  > {
+    const result = await db.collection("settings").get();
+    const guilds: { backgroundAmount: number; guildId: string }[] = [];
+    result.forEach((sample) => {
+      const data = sample.data();
+      const bgAmount = data.backgroundAmount || 10;
+      guilds.push({ backgroundAmount: bgAmount, guildId: data.guildId });
+    });
+    return guilds;
   }
 }

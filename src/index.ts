@@ -106,3 +106,30 @@ client.login(process.env.DISCORD_TOKEN);
 const app = express();
 app.get("/", (req: any, res: any) => res.send("You have found the secret"));
 app.listen(process.env.PORT, () => logger.info("Working"));
+
+setInterval(async () => {
+  const guilds = await settingsStore.getAllSettings();
+  await Promise.all(
+    guilds.map(async ({ guildId, backgroundAmount }) => {
+      const guild = client.guilds.cache.get(guildId);
+      if (guild) {
+        await Promise.all(
+          guild.members.cache
+            .filter((member) => member.presence.status === "online")
+            .map(
+              async (q) =>
+                await userStore.addBucks(
+                  q.id,
+                  backgroundAmount,
+                  "Background Tasks",
+                  q.displayName
+                )
+            )
+        );
+        logger.debug("Background Task Ran");
+      } else {
+        logger.error(`Unknown guild: ${guildId}`);
+      }
+    })
+  );
+}, 60000); //Give Money every 5 seconds
