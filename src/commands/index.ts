@@ -11,6 +11,7 @@ import { donateToChallenge } from "./challenges/donateToChallenge";
 import { addPhoto } from "./addPhoto";
 import { helpCommand } from "./help";
 import { settings } from "./settings";
+import { getOnline } from "./getOnline";
 
 const baseCommands: CommandSystem = {
   settings: {
@@ -88,6 +89,12 @@ const baseCommands: CommandSystem = {
     description: "Add a photo to the photo store",
     usage: "=addPhoto <photo link> [photo title]",
     func: addPhoto,
+    permissions: ["ADMINISTRATOR"],
+  },
+  onlineMembers: {
+    description: "Get number of members online",
+    usage: "=onlineMembers",
+    func: getOnline,
     permissions: ["ADMINISTRATOR"],
   },
 };
