@@ -23,7 +23,6 @@ logger.info(commandsByAlias);
 client.on("message", async (msg) => {
   const delim = settingsStore.settings.delim;
   const { content } = msg;
-  const settingsCopy = { ...settingsStore.settings };
   try {
     if (content.startsWith(delim)) {
       const [fullCommand, body] = commandParser(content);
@@ -58,7 +57,7 @@ client.on("message", async (msg) => {
       }
     }
   } catch (e) {
-    msg.channel.send(errorEvent(e));
+    await msg.channel.send(errorEvent(e));
   }
 });
 
@@ -107,7 +106,7 @@ const app = express();
 app.get("/", (req: any, res: any) => res.send("You have found the secret"));
 app.listen(process.env.PORT, () => logger.info("Working"));
 
-setInterval(async () => {
+const bgTask = async () => {
   const guilds = await settingsStore.getAllSettings();
   await Promise.all(
     guilds.map(async ({ guildId, backgroundAmount }) => {
@@ -132,4 +131,6 @@ setInterval(async () => {
       }
     })
   );
-}, 60000); //Give Money every 5 seconds
+};
+
+//setInterval(bgTask, 60000); //Give Money every 5 seconds
