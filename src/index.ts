@@ -57,47 +57,59 @@ client.on("message", async (msg) => {
       }
     }
   } catch (e) {
-    await msg.channel.send(errorEvent(e));
+    try {
+      await msg.channel.send(errorEvent(e));
+    } catch (badError) {
+      logger.error(
+        `A super bad error occured when trying to log: ${e.message} this error is: ${badError.message}`
+      );
+    }
   }
 });
 
 client.on("messageReactionAdd", (reaction, user) => {
-  logger.debug(reaction.emoji);
-  const member = reaction.message.guild?.members.cache.find(
-    (m) => m.id === user.id
-  );
-  const role = member?.roles.cache.find(
-    (r) => r.id === settingsStore.settings.role
-  );
+  try {
+    logger.debug(reaction.emoji);
+    const member = reaction.message.guild?.members.cache.find(
+      (m) => m.id === user.id
+    );
+    const role = member?.roles.cache.find(
+      (r) => r.id === settingsStore.settings.role
+    );
 
-  logger.debug(reaction.emoji.id ? reaction.emoji.id : "wtf");
-  logger.debug((reaction.emoji.id === settingsStore.settings.emoji).toString());
-  if (role) {
-    logger.debug(role);
-  } else {
-    logger.debug("no role");
-  }
-  if (
-    (reaction.emoji.id === settingsStore.settings.emoji ||
-      reaction.emoji.name === settingsStore.settings.emoji) &&
-    role
-  ) {
-    if (reaction.message.member && member) {
-      userStore.addBucks(
-        reaction.message.member.id,
-        settingsStore.settings.currencyValue,
-        member.displayName,
-        reaction.message.member.displayName
-      );
-      reaction.message.channel.send(
-        givenMoney(
-          settingsStore.settings.currencyValue,
-          member.id,
-          reaction.message.member.id,
-          settingsStore.settings.currencyName
-        )
-      );
+    logger.debug(reaction.emoji.id ? reaction.emoji.id : "wtf");
+    logger.debug(
+      (reaction.emoji.id === settingsStore.settings.emoji).toString()
+    );
+    if (role) {
+      logger.debug(role);
+    } else {
+      logger.debug("no role");
     }
+    if (
+      (reaction.emoji.id === settingsStore.settings.emoji ||
+        reaction.emoji.name === settingsStore.settings.emoji) &&
+      role
+    ) {
+      if (reaction.message.member && member) {
+        userStore.addBucks(
+          reaction.message.member.id,
+          settingsStore.settings.currencyValue,
+          member.displayName,
+          reaction.message.member.displayName
+        );
+        reaction.message.channel.send(
+          givenMoney(
+            settingsStore.settings.currencyValue,
+            member.id,
+            reaction.message.member.id,
+            settingsStore.settings.currencyName
+          )
+        );
+      }
+    }
+  } catch (e) {
+    logger.error(e);
   }
 });
 client.login(process.env.DISCORD_TOKEN);
