@@ -45,13 +45,13 @@ export const givenMoney = (
   currencyName: string
 ): MessageEmbed =>
   new MessageEmbed()
-    .setTitle(`${currencyName} Aquired!`)
+    .setTitle(`${currencyName} Acquired!`)
     .setDescription(
       `
 <@${to}>! <@${from}> has given you ${amount} ${currencyName}
 `
     )
-    .setImage("https://media.giphy.com/media/YBsd8wdchmxqg/giphy.gif");
+    .setImage("https://cdn.discordapp.com/attachments/728292914224037908/740644612464574524/sad_mattbucks.gif");
 
 export const errorEvent = (e: Error) => {
   logger.error(e);
