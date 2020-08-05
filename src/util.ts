@@ -43,15 +43,23 @@ export const givenMoney = (
   from: string,
   to: string,
   currencyName: string
-): MessageEmbed =>
-  new MessageEmbed()
+): MessageEmbed => {
+  let gif;
+  if (Math.random() < 0.05) {
+    gif = "https://cdn.discordapp.com/attachments/728292914224037908/740644612464574524/sad_mattbucks.gif";
+  } else {
+    gif = "https://media.giphy.com/media/YBsd8wdchmxqg/giphy.gif";
+  }
+
+  return new MessageEmbed()
     .setTitle(`${currencyName} Acquired!`)
     .setDescription(
       `
 <@${to}>! <@${from}> has given you ${amount} ${currencyName}
 `
     )
-    .setImage("https://cdn.discordapp.com/attachments/728292914224037908/740644612464574524/sad_mattbucks.gif");
+    .setImage(gif);
+};
 
 export const errorEvent = (e: Error) => {
   logger.error(e);
