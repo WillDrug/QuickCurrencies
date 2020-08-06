@@ -14,6 +14,20 @@ import express from "express";
 import { db } from "./dbConnection";
 import { Member } from "./models/member";
 
+process.on("unhandledRejection", (reason) => {
+  if (reason) {
+    logger.error(reason);
+  } else {
+    logger.error("something really went wrong and idk what");
+  }
+  process.exit(1);
+});
+
+process.on("uncaughtException", (e) => {
+  logger.error(e); //send to logging first
+  process.exit(1);
+});
+
 async function Main() {
   const c = await db;
 
@@ -142,7 +156,17 @@ async function Main() {
       })
     );
   };
-  setInterval(bgTask, 5000); //Give Money every 5 seconds
+  if (process.env.BACKGROUND_TASK_INTERVAL) {
+    const bgTaskTime = parseInt(process.env.BACKGROUND_TASK_INTERVAL);
+    if (isNaN(bgTaskTime)) {
+      throw new Error(
+        `${process.env.BACKGROUND_TASK_INTERVAL} is not a valid number you dumbo`
+      );
+    }
+    setInterval(bgTask, bgTaskTime); //Give Money every 5 seconds
+  } else {
+    throw new Error("BACKGROUND_TASK_INTERVAL not set");
+  }
 }
 
 Main();
