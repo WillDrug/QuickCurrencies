@@ -12,6 +12,7 @@ import { commandParser, givenMoney, errorEvent } from "./util";
 import { commandsByAlias } from "./commands";
 import express from "express";
 import { db } from "./dbConnection";
+import { Member } from "./models/member";
 
 async function Main() {
   const c = await db;
@@ -126,27 +127,22 @@ async function Main() {
       guilds.map(async ({ guildId, backgroundAmount }) => {
         const guild = client.guilds.cache.get(guildId);
         if (guild) {
-          await Promise.all(
-            guild.members.cache
-              .filter((member) => member.presence.status === "online")
-              .map(
-                async (q) =>
-                  await userStore.addBucks(
-                    q.id,
-                    backgroundAmount,
-                    "Background Tasks",
-                    q.displayName
-                  )
-              )
+          const users = guild.members.cache
+            .filter((member) => member.presence.status === "online")
+            .map((u) => u.id);
+          await Member.updateMany(
+            { _id: { $in: users } },
+            { $inc: { currency: backgroundAmount } }
           );
-          logger.debug("Background Task Ran");
+
+          logger.info("Background Task Ran");
         } else {
           logger.error(`Unknown guild: ${guildId}`);
         }
       })
     );
   };
-  //setInterval(bgTask, 60000); //Give Money every 5 seconds
+  setInterval(bgTask, 5000); //Give Money every 5 seconds
 }
 
 Main();
