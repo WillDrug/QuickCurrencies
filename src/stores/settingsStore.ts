@@ -1,15 +1,6 @@
 import logger from "../logger";
-import { db } from "../dbConnection";
-
-export interface Settings {
-  role: string;
-  emoji: string;
-  delim: string;
-  currencyValue: number;
-  currencyName: string;
-  photoBill: number;
-  backgroundAmount: number;
-}
+import { Settings } from "../models/settings";
+import { Db } from "mongodb";
 export class SettingsStore {
   public settings: Settings;
 
@@ -22,26 +13,21 @@ export class SettingsStore {
       currencyName: "",
       photoBill: 1,
       backgroundAmount: 10,
+      guildId: "",
     };
     this.settings = settings;
-    db.collection("settings")
-      .doc("catscafe")
-      .get()
-      .then((d) => {
-        const s = d.data();
-        logger.info({ msg: "Loaded settings:", s });
-        this.setSettingsAfterLoad({ ...settings, ...s });
-      });
+
+    Settings.findById("catscafe").then((s) => {
+      logger.info({ msg: "Loaded settings:", s: s?.toJSON() });
+      this.setSettingsAfterLoad({ ...settings, ...s?.toJSON() });
+    });
   }
   private setSettingsAfterLoad(s: any) {
     this.settings = s;
   }
 
   private async saveStore() {
-    await db
-      .collection("settings")
-      .doc("catscafe")
-      .set(this.settings, { merge: true });
+    Settings.update({ _id: "catscafe" }, { $set: this.settings });
     logger.info("Saved store");
   }
 
@@ -53,12 +39,11 @@ export class SettingsStore {
   public async getAllSettings(): Promise<
     { backgroundAmount: number; guildId: string }[]
   > {
-    const result = await db.collection("settings").get();
+    const result = await Settings.find();
     const guilds: { backgroundAmount: number; guildId: string }[] = [];
     result.forEach((sample) => {
-      const data = sample.data();
-      const bgAmount = data.backgroundAmount || 10;
-      guilds.push({ backgroundAmount: bgAmount, guildId: data.guildId });
+      const bgAmount = sample.backgroundAmount || 10;
+      guilds.push({ backgroundAmount: bgAmount, guildId: sample.guildId });
     });
     return guilds;
   }

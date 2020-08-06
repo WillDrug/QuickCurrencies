@@ -1,14 +1,5 @@
 import { TextChannel, MessageEmbed, DMChannel, NewsChannel } from "discord.js";
-import { db } from "../dbConnection";
-import logger from "../logger";
-const CHALLENGE_COLLECTION = "challenge";
-
-export interface Challenge {
-  currentAmount: number;
-  description: string;
-  name: string;
-  target: number;
-}
+import { Challenge } from "../models/challenge";
 
 const percentageMappings = [
   "https://media.discordapp.net/attachments/711291510414376970/725425186911944714/Progress_Bar_0.png",
@@ -28,20 +19,15 @@ const OVERFLOW_IMAGE =
   "https://cdn.discordapp.com/attachments/711291510414376970/725766604125896734/Progress_Bar_Overfill.png";
 
 export class ChallengeStore {
-  constructor() {}
-
   public async listChallenges(channel: TextChannel | DMChannel | NewsChannel) {
-    const snapshot = await db.collection(CHALLENGE_COLLECTION).get();
-
-    let challengeString = "All Challenges!: \n";
-    snapshot.forEach((challenge) => {
-      const data: Challenge = challenge.data() as Challenge;
-      challengeString += `${data.name}: \`${data.currentAmount}/${
-        data.target
-      }[${Math.floor((data.currentAmount / data.target) * 100)}]%\`\n${
-        data.description
-      }`;
-    });
+    // TODO dont send message here.
+    const challengeString = (await Challenge.find()).reduce(
+      (c, data) =>
+        `${c}${data.name}: \`${data.currentAmount}/${data.target}[${Math.floor(
+          (data.currentAmount / data.target) * 100
+        )}]%\`\n${data.description}\n`,
+      "All Challenges!: \n"
+    );
 
     channel.send(
       new MessageEmbed()
@@ -52,7 +38,7 @@ export class ChallengeStore {
   public async specificChallengeStatus(
     challengeName: string
   ): Promise<MessageEmbed> {
-    const [challengeId, challenge] = await this.getChallenge(challengeName);
+    const challenge = await this.getChallenge(challengeName);
     const percent = challenge.currentAmount / challenge.target;
     return new MessageEmbed()
       .setTitle("Challenge Status!")
@@ -68,27 +54,15 @@ export class ChallengeStore {
       );
   }
 
-  private async getChallenge(
-    challengeName: string
-  ): Promise<[string, Challenge]> {
-    const challenge = (
-      await db
-        .collection(CHALLENGE_COLLECTION)
-        .where("name", "==", challengeName)
-        .limit(1)
-        .get()
-    ).docs[0];
+  private async getChallenge(challengeName: string): Promise<Challenge> {
+    const challenge = (await Challenge.find({ name: challengeName }))[0];
     if (!challenge) throw new Error("Invalid Challenge Name");
-    return [challenge.id, challenge.data() as Challenge];
+    return challenge;
   }
   public async addToChallenge(amount: number, challengeName: string) {
-    const [challengeId, challenge] = await this.getChallenge(challengeName);
-    await db
-      .collection(CHALLENGE_COLLECTION)
-      .doc(challengeId)
-      .set(
-        { currentAmount: challenge.currentAmount + amount },
-        { merge: true }
-      );
+    await Challenge.update(
+      { name: challengeName },
+      { $inc: { currentAmount: amount } }
+    );
   }
 }

@@ -1,50 +1,30 @@
 import logger from "../logger";
-import { db } from "../dbConnection";
-const COLLECTION_NAME = "members";
+import { Member } from "../models/member";
+import { Image } from "../models/image";
 
 export class UserStore {
-  constructor() {
-    // pull state out of firestore and save here.
-  }
-
   public async addBucks(uid: string, amount: number, from: string, to: string) {
-    const currAmmount = (
-      await db.collection(COLLECTION_NAME).doc(uid).get()
-    ).data();
-    let endAmm;
-    if (currAmmount) {
-      endAmm = Math.round(currAmmount.currency + amount);
-    } else {
-      endAmm = amount;
-    }
-    await db
-      .collection(COLLECTION_NAME)
-      .doc(uid)
-      .set({ currency: endAmm }, { merge: true });
+    await Member.updateOne(
+      { id: uid },
+      { $inc: { currency: Math.round(amount) } }
+    );
+
     logger.info(`${from} added ${amount} bucks to: ${to}`);
   }
 
   public async getTop(n: number): Promise<[string, number][]> {
-    const snapshot = await db
-      .collection(COLLECTION_NAME)
-      .orderBy("currency", "desc")
-      .limit(n)
-      .get();
-
+    const docs = await Member.find().sort({ currency: -1 }).limit(n);
     const status: [string, number][] = [];
-    snapshot.forEach((sample) => {
-      const data = sample.data();
-      status.push([sample.id, data.currency]);
+    docs.forEach((m) => {
+      status.push([m.id as string, m.currency]);
     });
-
     return status;
   }
 
   public async getMyBalance(id: string): Promise<number> {
-    const d = await db.collection(COLLECTION_NAME).doc(id).get();
-    const data = d.data();
-    if (d.exists && data) {
-      return data.currency;
+    const m = await Member.findById(id);
+    if (m) {
+      return m.currency;
     }
     return 0;
   }
@@ -63,14 +43,8 @@ export class UserStore {
     );
   }
 
-  public async getPhoto(): Promise<{ location: string; text?: string }> {
-    const photos: { location: string; text?: string }[] = [];
-    const snapShot = await db.collection("images").get();
-
-    snapShot.forEach((e) => {
-      photos.push(e.data() as any);
-    });
-    return photos[Math.floor(Math.random() * photos.length)];
+  public async getPhoto(): Promise<Image> {
+    return (await Image.aggregate<Image>([{ $sample: { size: 1 } }]))[0];
   }
 
   public async billAccount(
@@ -86,9 +60,6 @@ export class UserStore {
   }
 
   public async addPhoto(url: string, name?: string) {
-    await db
-      .collection("images")
-      .doc()
-      .set(name ? { location: url, text: name } : { location: url });
+    await new Image({ location: url, name }).save();
   }
 }

@@ -1,17 +1,6 @@
-import admin from "firebase-admin";
-import fs from "fs";
+import mongoose from "mongoose";
+if (!process.env.MONGODB_URI) throw new Error("DB URI not set");
 
-if (!(process.env.PERM_STRING || process.env.PERM_LOCATION) || !process.env.DB_LOCATION) {
-  throw new Error("PERM_LOCATION or DB_LOCATION not set");
-}
-const serviceAccount = JSON.parse(
-  process.env.PERM_STRING ||
-    fs.readFileSync(`${process.cwd()}/${process.env.PERM_LOCATION || ""}`).toString()
-);
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.DB_LOCATION,
+export const db = mongoose.connect(process.env.MONGODB_URI, {
+  useNewUrlParser: true,
 });
-
-export const db = admin.firestore();
