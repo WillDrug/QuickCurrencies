@@ -14,6 +14,7 @@ export interface Command {
   permissions?: PermissionResolvable[];
   alias?: string[];
   requiresRole?: boolean;
+  useIgnoreRole?: boolean;
 }
 
 export interface CommandSystem {

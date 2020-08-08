@@ -27,12 +27,15 @@ Description:
     ${command.description}
 
 Aliases:
-    ${command.alias?.reduce((acc, alias) => `${acc}${alias}\n`, "")}
+    ${command.alias?.reduce((acc, alias) => `${acc}${alias}\n`, "") ?? "None"}
 Usage:
     ${command.usage}
 
 Permissions:
-    ${command.permissions?.reduce((acc, perm) => `${acc}${perm}\n`, "")}
+    ${
+      command.permissions?.reduce((acc, perm) => `${acc}${perm}\n`, "") ??
+      "None"
+    }
 Requires Role:
     ${!!command.requiresRole}
 `

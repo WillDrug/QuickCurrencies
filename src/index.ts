@@ -1,4 +1,4 @@
-import discord from "discord.js";
+import discord, { Message } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -64,6 +64,17 @@ async function Main() {
           ) {
             throw new Error("Invalid Permissions");
           }
+
+          if (
+            command.useIgnoreRole &&
+            msg.member?.roles.cache.find(
+              (r) => r.id === settingsStore.settings.ignoreRole
+            )
+          ) {
+            logger.info("ignoring");
+            return; //The bot ignores you
+          }
+
           await command.func(
             body,
             { userStore, challengeStore, settingsStore },
@@ -84,8 +95,17 @@ async function Main() {
     }
   });
 
-  client.on("messageReactionAdd", (reaction, user) => {
+  client.on("messageReactionAdd", async (reaction, user) => {
     try {
+      logger.info(settingsStore.settings.ignoreRole);
+      if (
+        reaction.message.member?.roles.cache.find(
+          (r) => r.id === settingsStore.settings.ignoreRole
+        )
+      ) {
+        logger.info("Ignoring");
+        return;
+      }
       logger.debug(reaction.emoji);
       const member = reaction.message.guild?.members.cache.find(
         (m) => m.id === user.id
@@ -138,11 +158,15 @@ async function Main() {
   const bgTask = async () => {
     const guilds = await settingsStore.getAllSettings();
     await Promise.all(
-      guilds.map(async ({ guildId, backgroundAmount }) => {
+      guilds.map(async ({ guildId, backgroundAmount, ignoreRole }) => {
         const guild = client.guilds.cache.get(guildId);
         if (guild) {
           const users = guild.members.cache
-            .filter((member) => member.presence.status === "online")
+            .filter(
+              (member) =>
+                member.presence.status === "online" &&
+                !member.roles.cache.find((r) => r.id === ignoreRole)
+            )
             .map((u) => u.id);
           await Member.updateMany(
             { _id: { $in: users } },

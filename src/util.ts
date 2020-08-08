@@ -46,7 +46,8 @@ export const givenMoney = (
 ): MessageEmbed => {
   let gif;
   if (Math.random() < 0.05) {
-    gif = "https://cdn.discordapp.com/attachments/728292914224037908/740644612464574524/sad_mattbucks.gif";
+    gif =
+      "https://cdn.discordapp.com/attachments/728292914224037908/740644612464574524/sad_mattbucks.gif";
   } else {
     gif = "https://media.giphy.com/media/YBsd8wdchmxqg/giphy.gif";
   }
@@ -78,3 +79,14 @@ export const changeSuccessful = (
     .setTitle("Update Successful!")
     .setColor("#20fc03")
     .setDescription(`*${fieldName}:* \n ${originalValue} => ${givenValue}`);
+
+export const memberIsIgnored = (
+  msg: Message,
+  personId: string,
+  ignoreRole: string
+) => {
+  const member = msg.guild?.members.cache.find((m) => m.id === personId);
+  if (member && member.roles.cache.find((r) => r.id === ignoreRole)) {
+    throw new Error(`Memeber Has the ignore role <@&${ignoreRole}>`);
+  }
+};

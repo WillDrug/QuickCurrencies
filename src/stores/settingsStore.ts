@@ -14,11 +14,12 @@ export class SettingsStore {
       photoBill: 1,
       backgroundAmount: 10,
       guildId: "",
+      ignoreRole: "",
     };
     this.settings = settings;
 
     Settings.findById("catscafe").then((s) => {
-      logger.info({ msg: "Loaded settings:", s: s?.toJSON() });
+      logger.info({ msg: "Loaded settings:", ...s?.toJSON() });
       this.setSettingsAfterLoad({ ...settings, ...s?.toJSON() });
     });
   }
@@ -27,7 +28,7 @@ export class SettingsStore {
   }
 
   private async saveStore() {
-    Settings.update({ _id: "catscafe" }, { $set: this.settings });
+    await Settings.updateOne({ _id: "catscafe" }, { $set: this.settings });
     logger.info("Saved store");
   }
 
@@ -36,15 +37,7 @@ export class SettingsStore {
     await this.saveStore();
   }
 
-  public async getAllSettings(): Promise<
-    { backgroundAmount: number; guildId: string }[]
-  > {
-    const result = await Settings.find();
-    const guilds: { backgroundAmount: number; guildId: string }[] = [];
-    result.forEach((sample) => {
-      const bgAmount = sample.backgroundAmount || 10;
-      guilds.push({ backgroundAmount: bgAmount, guildId: sample.guildId });
-    });
-    return guilds;
+  public async getAllSettings(): Promise<Settings[]> {
+    return await Settings.find();
   }
 }

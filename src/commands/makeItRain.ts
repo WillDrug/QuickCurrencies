@@ -3,7 +3,7 @@ import { Stores } from "../types";
 
 export const makeItRain = async (
   amount: string,
-  { userStore }: Stores,
+  { userStore, settingsStore }: Stores,
   msg: Message
 ) => {
   const numAmount = parseInt(amount);
@@ -13,7 +13,14 @@ export const makeItRain = async (
   if (msg.guild && msg.member) {
     await userStore.makeItRain(
       numAmount,
-      msg.guild.members.cache.map((m) => m.id),
+      msg.guild.members.cache
+        .filter(
+          (m) =>
+            !!m.roles.cache.find(
+              (r) => r.id === settingsStore.settings.ignoreRole
+            )
+        )
+        .map((m) => m.id),
       msg.member.displayName
     );
     const embed = new MessageEmbed()

@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { mentionHandler, givenMoney } from "../util";
+import { mentionHandler, givenMoney, memberIsIgnored } from "../util";
 
 import logger from "../logger";
 import { Stores } from "../types";
@@ -11,6 +11,7 @@ export const giveMoneyAdmin = async (
 ) => {
   const arrayArgs = args.split(" ");
   const person = mentionHandler(arrayArgs[0])[0];
+  memberIsIgnored(msg, person, settingsStore.settings.ignoreRole);
 
   const amount = arrayArgs[1];
   const numAmount = parseInt(amount);
