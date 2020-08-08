@@ -2,3 +2,4 @@ perms/
 .env
 lib/
 node_modules/
+exports

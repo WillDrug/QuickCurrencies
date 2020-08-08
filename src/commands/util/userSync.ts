@@ -1,12 +1,21 @@
-import { Member } from "../models/member";
-import { Stores } from "../types";
+import { Member } from "../../models/member";
+import { Stores } from "../../types";
 import { Message, MessageEmbed } from "discord.js";
 
-export const userSync = async (_1: string, _2: Stores, msg: Message) => {
+export const userSync = async (
+  _1: string,
+  { settingsStore }: Stores,
+  msg: Message
+) => {
   if (!msg.guild) {
     throw new Error("Guild unreachable");
   }
-  const serverMembers = msg.guild.members.cache.map((u) => u.id);
+  const serverMembers = msg.guild.members.cache
+    .filter(
+      (u) =>
+        !!u.roles.cache.find((r) => r.id === settingsStore.settings.ignoreRole)
+    )
+    .map((u) => u.id);
 
   if (serverMembers) {
     const dBids = (await Member.find()).map((u) => u._id);

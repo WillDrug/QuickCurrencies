@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { Stores } from "../types";
+import { Stores } from "../../types";
 
 export const getOnline = async (_: string, _2: Stores, msg: Message) => {
   msg.channel.send(

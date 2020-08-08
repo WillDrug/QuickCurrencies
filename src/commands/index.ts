@@ -11,8 +11,9 @@ import { donateToChallenge } from "./challenges/donateToChallenge";
 import { addPhoto } from "./addPhoto";
 import { helpCommand } from "./help";
 import { settings } from "./settings";
-import { getOnline } from "./getOnline";
-import { userSync } from "./userSync";
+import { getOnline } from "./util/getOnline";
+import { userSync } from "./util/userSync";
+import { getDifferentBank } from "./util/getDifferentBank";
 
 const baseCommands: CommandSystem = {
   settings: {
@@ -104,6 +105,13 @@ const baseCommands: CommandSystem = {
     func: userSync,
     permissions: ["ADMINISTRATOR"],
   },
+
+  getDifferentBank: {
+    description: "[ADMIN ONLY] Get amount in different account",
+    usage: "=getDifferentBank",
+    func: getDifferentBank,
+    permissions: ["ADMINISTRATOR"],
+  },
 };
 
 const baseCommandsByAlias: CommandSystem = Array.from(
@@ -118,6 +126,7 @@ const baseCommandsByAlias: CommandSystem = Array.from(
     ),
   };
 }, {});
+
 const help: Command = {
   description: "get help with a command",
   func: helpCommand(baseCommands, baseCommandsByAlias),
