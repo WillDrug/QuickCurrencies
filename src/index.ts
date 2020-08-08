@@ -95,6 +95,20 @@ async function Main() {
     }
   });
 
+  client.on("guildMemberAdd", async (member) => {
+    logger.info(
+      await Member.updateOne(
+        { _id: member.id },
+        { _id: member.id, currency: 1000 },
+        { upsert: true }
+      )
+    );
+  });
+
+  client.on("guildMemberRemove", async (member) => {
+    logger.info(await Member.deleteOne({ _id: member.id }));
+  });
+
   client.on("messageReactionAdd", async (reaction, user) => {
     try {
       logger.info(settingsStore.settings.ignoreRole);

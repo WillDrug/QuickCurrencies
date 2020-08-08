@@ -24,6 +24,7 @@
     "typescript": "^3.9.5"
   },
   "devDependencies": {
+    "pino-pretty": "^4.1.0",
     "ts-node": "^8.10.2"
   }
 }

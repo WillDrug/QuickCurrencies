@@ -12,6 +12,7 @@ import { addPhoto } from "./addPhoto";
 import { helpCommand } from "./help";
 import { settings } from "./settings";
 import { getOnline } from "./getOnline";
+import { userSync } from "./userSync";
 
 const baseCommands: CommandSystem = {
   settings: {
@@ -95,6 +96,12 @@ const baseCommands: CommandSystem = {
     description: "Get number of members online",
     usage: "=onlineMembers",
     func: getOnline,
+    permissions: ["ADMINISTRATOR"],
+  },
+  userSync: {
+    description: "Sync Members to db",
+    usage: "=userSync",
+    func: userSync,
     permissions: ["ADMINISTRATOR"],
   },
 };

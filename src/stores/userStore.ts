@@ -4,9 +4,12 @@ import { Image } from "../models/image";
 
 export class UserStore {
   public async addBucks(uid: string, amount: number, from: string, to: string) {
-    await Member.updateOne(
-      { id: uid },
-      { $inc: { currency: Math.round(amount) } }
+    logger.info(
+      await Member.updateOne(
+        { _id: uid },
+        { _id: uid, $inc: { currency: Math.round(amount) } },
+        { upsert: true }
+      )
     );
 
     logger.info(`${from} added ${amount} bucks to: ${to}`);
@@ -31,15 +34,11 @@ export class UserStore {
 
   public async makeItRain(amount: number, members: string[], from: string) {
     const bpp = amount / members.length;
-    await Promise.all(
-      Array.from(members).map((id) =>
-        this.addBucks(
-          id,
-          Math.round(bpp + Math.ceil(bpp * 0.1 * Math.random())),
-          from,
-          id
-        )
-      )
+    await Member.updateMany(
+      { _id: { $in: members } },
+      {
+        $inc: { currency: Math.round(bpp) },
+      }
     );
   }
 
