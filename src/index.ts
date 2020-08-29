@@ -45,13 +45,13 @@ async function Main() {
       if (content.startsWith(delim)) {
         const [fullCommand, body] = commandParser(content);
         // check if the command is in the prohibited routes (=\, =/, etc.)
-        if (prohibitedCommands.includes(content)) {
+        const cmd = fullCommand.substr(1);
+         if (prohibitedCommands.includes(fullCommand)) {
           // if so, ignore
           return;
         }
 
-        const cmd = fullCommand.substr(1);
-        
+       
         if (commandsByAlias[cmd]) {
           const command = commandsByAlias[cmd];
 
