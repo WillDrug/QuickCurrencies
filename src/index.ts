@@ -9,7 +9,7 @@ import logger from "./logger";
 
 import { commandParser, givenMoney, errorEvent } from "./util";
 
-import { commandsByAlias } from "./commands";
+import { commandsByAlias, prohibitedCommands } from "./commands";
 import express from "express";
 import { db } from "./dbConnection";
 import { Member } from "./models/member";
@@ -40,11 +40,18 @@ async function Main() {
   client.on("message", async (msg) => {
     const delim = settingsStore.settings.delim;
     const { content } = msg;
+    
     try {
       if (content.startsWith(delim)) {
         const [fullCommand, body] = commandParser(content);
-        const cmd = fullCommand.substr(1);
+        // check if the command is in the prohibited routes (=\, =/, etc.)
+        if (prohibitedCommands.includes(content)) {
+          // if so, ignore
+          return;
+        }
 
+        const cmd = fullCommand.substr(1);
+        
         if (commandsByAlias[cmd]) {
           const command = commandsByAlias[cmd];
 

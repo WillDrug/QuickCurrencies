@@ -142,3 +142,6 @@ export const commandsByAlias: CommandSystem = {
   ...baseCommandsByAlias,
   help,
 };
+
+// Input routes which will be ignored
+export const prohibitedCommands = ['=\\', '=/']
