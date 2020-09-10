@@ -7,7 +7,7 @@ import { UserStore } from "./stores/userStore";
 import { ChallengeStore } from "./stores/challengeStore";
 import logger from "./logger";
 
-import { commandParser, givenMoney, errorEvent } from "./util";
+import { commandParser, givenMoney, userFined, errorEvent } from "./util";
 
 import { commandsByAlias, prohibitedCommands } from "./commands";
 import express from "express";
@@ -42,6 +42,28 @@ async function Main() {
     const { content } = msg;
     
     try {
+      // LAWS
+      // this should become a package in util but this is a joke anyway
+      if (content.contains(' death ') || content.contains(' dead ') || content.contains(' dying ') || content.contains(' die ')) {
+        if (!msg.member?.roles.cache.find(
+              (r) => r.id === settingsStore.settings.ignoreRole
+            )) {
+          userStore.addBucks(
+            message.member.id,
+            -50,
+            message.member.displayName,
+            message.member.displayName
+          );
+          reaction.message.channel.send(
+            userFined(
+              50,
+              member.id,
+              settingsStore.settings.currencyName
+            )
+          );
+        }
+      }
+
       if (content.startsWith(delim)) {
         const [fullCommand, body] = commandParser(content);
         // check if the command is in the prohibited routes (=\, =/, etc.)

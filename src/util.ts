@@ -38,6 +38,24 @@ export const mentionHandler = (src: string): string[] => {
     : [];
 }; //return array of ids from string;
 
+export const userFined = (
+  amount: number,
+  user: string,
+  currencyName: string
+): MessageEmbed => {
+  let gif;
+  gif = "https://media.giphy.com/media/m5Mc6wjeecaOY/giphy.gif";
+
+  return new MessageEmbed()
+    .setTitle(`${currencyName} Fined!`)
+    .setDescription(
+      `
+<@${user}>! You have been fined ${amount} ${currencyName}
+`
+    )
+    .setImage(gif);
+};
+
 export const givenMoney = (
   amount: number,
   from: string,
