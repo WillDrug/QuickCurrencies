@@ -7,6 +7,8 @@ import {
 } from "discord.js";
 import logger from "./logger";
 
+const taxGif = "https://media.giphy.com/media/m5Mc6wjeecaOY/giphy.gif";
+
 const roleRegex = /<@&(\d+)>/g;
 export const roleHandler = (src: string): string[] => {
   const matches = src.match(roleRegex);
@@ -43,9 +45,7 @@ export const userFined = (
   user: string,
   currencyName: string
 ): MessageEmbed => {
-  let gif;
-  gif = "https://media.giphy.com/media/m5Mc6wjeecaOY/giphy.gif";
-
+  
   return new MessageEmbed()
     .setTitle(`${currencyName} Fined!`)
     .setDescription(
@@ -53,7 +53,7 @@ export const userFined = (
 <@${user}>! You have been fined ${amount} ${currencyName}
 `
     )
-    .setImage(gif);
+    .setImage(taxGif);
 };
 
 export const givenMoney = (

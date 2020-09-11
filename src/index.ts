@@ -37,8 +37,8 @@ async function Main() {
 
   const userStore = new UserStore();
   const challengeStore = new ChallengeStore();
-  const checkIgnore = function(member: GuildMember | null) {
-    return (member?.roles.cache.find((r) => r.id === settingsStore.settings.role));
+  const checkIgnore = function(member: GuildMember | null, ss: SettingsStore) {
+    return (member?.roles.cache.find((r) => r.id === ss.settings.role));
   }
 
   client.on("message", async (msg) => {
@@ -46,7 +46,7 @@ async function Main() {
     const { content } = msg;
     
     try {
-      if (!checkIgnore(msg.member)) {
+      if (!checkIgnore(msg.member, settingsStore)) {
         // todo: get a promise and fullfill by sending userFined =\\
         policeOfficer.checkMessage(msg.member, content, msg.channel);
       }
@@ -67,7 +67,7 @@ async function Main() {
 
           if (
             command.requiresRole &&
-            !checkIgnore(msg.member)
+            !checkIgnore(msg.member, settingsStore)
           ) {
             throw new Error("Unauthorized");
           }
@@ -81,7 +81,7 @@ async function Main() {
           }
 
           if (
-            command.useIgnoreRole && checkIgnore(msg.member)
+            command.useIgnoreRole && checkIgnore(msg.member, settingsStore)
           ) {
             logger.info("ignoring");
             return; //The bot ignores you
@@ -125,7 +125,7 @@ async function Main() {
     try {
       logger.info(settingsStore.settings.ignoreRole);
       if (
-        checkIgnore(reaction.message.member)
+        checkIgnore(reaction.message.member, settingsStore)
       ) {
         logger.info("Ignoring");
         return;
@@ -189,7 +189,7 @@ async function Main() {
             .filter(
               (member) =>
                 member.presence.status === "online" &&
-                !checkIgnore(member)
+                !checkIgnore(member, settingsStore)
             )
             .map((u) => u.id);
           await Member.updateMany(
