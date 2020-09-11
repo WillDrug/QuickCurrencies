@@ -3,3 +3,4 @@ perms/
 lib/
 node_modules/
 exports
+Dockerfile

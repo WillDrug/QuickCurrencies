@@ -8,13 +8,14 @@ export class SettingsStore {
     const settings = {
       role: "",
       emoji: "",
-      delim: "",
+      delim: "=",
       currencyValue: 1,
       currencyName: "",
       photoBill: 1,
       backgroundAmount: 10,
       guildId: "",
       ignoreRole: "",
+      fineAmount: 50,
     };
     this.settings = settings;
 

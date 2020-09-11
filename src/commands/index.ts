@@ -14,6 +14,7 @@ import { settings } from "./settings";
 import { getOnline } from "./util/getOnline";
 import { userSync } from "./util/userSync";
 import { getDifferentBank } from "./util/getDifferentBank";
+import { PoliceOfficer } from "./laws"
 
 const baseCommands: CommandSystem = {
   settings: {
@@ -144,4 +145,5 @@ export const commandsByAlias: CommandSystem = {
 };
 
 // Input routes which will be ignored
-export const prohibitedCommands = ['=\\', '=/']
+export const prohibitedCommands = ['=\\', '=/'];
+export const policeOfficer = new PoliceOfficer();

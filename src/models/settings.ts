@@ -11,6 +11,7 @@ export interface Settings {
   backgroundAmount: number;
   guildId: string;
   ignoreRole: Role;
+  fineAmount: number;
 }
 
 export enum SettingType {
@@ -61,6 +62,7 @@ export const settingsSetterSchema: { [key: string]: SettingType } = {
   photoBill: SettingType.number,
   backgroundAmount: SettingType.number,
   ignoreRole: SettingType.Role,
+  fineAmount: SettingType.number,
 };
 
 const settingsSchema = new Schema<Settings>({
@@ -74,6 +76,7 @@ const settingsSchema = new Schema<Settings>({
   backgroundAmount: { type: Number, required: true },
   guildId: { type: String, required: false },
   ignoreRole: { type: String, required: true },
+  fineAmount: { type: Number, required: true },
 });
 
 export const Settings = model<Settings & Document>("Settings", settingsSchema);

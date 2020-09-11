@@ -1,4 +1,4 @@
-import discord, { Message } from "discord.js";
+import discord, { Message, GuildMember } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -7,9 +7,9 @@ import { UserStore } from "./stores/userStore";
 import { ChallengeStore } from "./stores/challengeStore";
 import logger from "./logger";
 
-import { commandParser, givenMoney, userFined, errorEvent } from "./util";
+import { commandParser, givenMoney, errorEvent, userFined } from "./util";
 
-import { commandsByAlias, prohibitedCommands } from "./commands";
+import { commandsByAlias, prohibitedCommands, policeOfficer } from "./commands";
 import express from "express";
 import { db } from "./dbConnection";
 import { Member } from "./models/member";
@@ -28,6 +28,7 @@ process.on("uncaughtException", (e) => {
   process.exit(1);
 });
 
+
 async function Main() {
   const c = await db;
 
@@ -36,33 +37,20 @@ async function Main() {
 
   const userStore = new UserStore();
   const challengeStore = new ChallengeStore();
+  const checkIgnore = function(member: GuildMember | null) {
+    return (member?.roles.cache.find((r) => r.id === settingsStore.settings.role));
+  }
 
   client.on("message", async (msg) => {
     const delim = settingsStore.settings.delim;
     const { content } = msg;
     
     try {
-      // LAWS
-      // this should become a package in util but this is a joke anyway
-      if (content.contains(' death ') || content.contains(' dead ') || content.contains(' dying ') || content.contains(' die ')) {
-        if (!msg.member?.roles.cache.find(
-              (r) => r.id === settingsStore.settings.ignoreRole
-            )) {
-          userStore.addBucks(
-            message.member.id,
-            -50,
-            message.member.displayName,
-            message.member.displayName
-          );
-          reaction.message.channel.send(
-            userFined(
-              50,
-              member.id,
-              settingsStore.settings.currencyName
-            )
-          );
-        }
+      if (!checkIgnore(msg.member)) {
+        // todo: get a promise and fullfill by sending userFined =\\
+        policeOfficer.checkMessage(msg.member, content, msg.channel);
       }
+      
 
       if (content.startsWith(delim)) {
         const [fullCommand, body] = commandParser(content);
@@ -79,9 +67,7 @@ async function Main() {
 
           if (
             command.requiresRole &&
-            !msg.member?.roles.cache.find(
-              (r) => r.id === settingsStore.settings.role
-            )
+            !checkIgnore(msg.member)
           ) {
             throw new Error("Unauthorized");
           }
@@ -95,10 +81,7 @@ async function Main() {
           }
 
           if (
-            command.useIgnoreRole &&
-            msg.member?.roles.cache.find(
-              (r) => r.id === settingsStore.settings.ignoreRole
-            )
+            command.useIgnoreRole && checkIgnore(msg.member)
           ) {
             logger.info("ignoring");
             return; //The bot ignores you
@@ -142,9 +125,7 @@ async function Main() {
     try {
       logger.info(settingsStore.settings.ignoreRole);
       if (
-        reaction.message.member?.roles.cache.find(
-          (r) => r.id === settingsStore.settings.ignoreRole
-        )
+        checkIgnore(reaction.message.member)
       ) {
         logger.info("Ignoring");
         return;
@@ -208,7 +189,7 @@ async function Main() {
             .filter(
               (member) =>
                 member.presence.status === "online" &&
-                !member.roles.cache.find((r) => r.id === ignoreRole)
+                !checkIgnore(member)
             )
             .map((u) => u.id);
           await Member.updateMany(
