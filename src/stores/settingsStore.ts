@@ -16,6 +16,7 @@ export class SettingsStore {
       guildId: "",
       ignoreRole: "",
       fineAmount: 50,
+      curses: ['death', 'dead', 'dying', 'kill'], // todo move all the homonyms and such from this and setup at least a regex
     };
     this.settings = settings;
 

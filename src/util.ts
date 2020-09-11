@@ -25,6 +25,10 @@ export const emojiHandler = (emojiString: string): string => {
   }
 };
 
+export const arrayHandler = (arrayString: string): Array<string> => {
+    return arrayString.split(',').map(e=>e.trim());
+}
+
 export const commandParser = (cmd: string): [string, string] => {
   const spaceLocation = cmd.indexOf(" ");
   if (spaceLocation < 0) return [cmd, ""];
