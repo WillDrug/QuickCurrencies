@@ -35,6 +35,7 @@ async function Main() {
   const client = new discord.Client();
   const settingsStore = new SettingsStore();
 
+
   const userStore = new UserStore();
   const challengeStore = new ChallengeStore();
   const checkIgnore = function(member: GuildMember | null, ss: SettingsStore) {
@@ -46,9 +47,9 @@ async function Main() {
     const { content } = msg;
     
     try {
-      if (!checkIgnore(msg.member, settingsStore)) {
+      if (!checkIgnore(msg.member, settingsStore) && settingsStore.settings.curses.indexOf('') == -1 && settingsStore.settings.curses.length > 0) {
         // todo: get a promise and fullfill by sending userFined =\\
-        policeOfficer.checkMessage(msg.member, content, msg.channel);
+        await policeOfficer.checkMessage(msg.member, content, msg.channel, settingsStore, userStore);
       }
       
 

@@ -17,7 +17,7 @@ const punctuationRegEx = /[!-/:-@[-`{-~¡-©«-¬®-±´¶-¸»¿×÷˂-˅˒-˟�
 
 
 export class PoliceOfficer {
-  public async checkMessage(user: GuildMember | null, message: string, channel: Channel) {
+  public async checkMessage(user: GuildMember | null, message: string, channel: Channel, settingsStore: SettingStore, userStore: UserStore) => Promise<void> {
     if (settingsStore.settings.curses.length == 0) {
       return
     }
@@ -25,27 +25,18 @@ export class PoliceOfficer {
       logger.error("Cursewords contains empty string, Police Officer refuses to work under such conditions");
       return
     }
-    if (user == null) {
-      logger.error("Null user?!")
-      return;
-    }
 
-  	let words = message.replace(punctuationRegEx, '').replace(/(\s){2,}/g, '$1').toLowerCase().split(' ');
-  	let saidBad = [];
-  	for (let i in settingsStore.settings.curses) {
+  	const words = message.replace(punctuationRegEx, '').replace(/(\s){2,}/g, '$1').toLowerCase().split(' ');
+  	const saidBad = words.filter(w => settingsStore.settings.curses.includes(w))
 
-  	    if (words.indexOf(settingsStore.settings.curses[i]) > -1) {
-  	        saidBad.push(settingsStore.settings.curses[i]);
-  	    }
-  	}
   	if (saidBad.length > 0 && channel instanceof TextChannel) {
-  		return this.lawBreak(user, `Said bad words: ${saidBad}`, channel);
+  		await return this.lawBreak(user, `Said bad words: ${saidBad}`, channel, settingsStore, userStore);
     }
   }
 
-  public async lawBreak(user: GuildMember, reason: string, channel: TextChannel) {
+  public async lawBreak(user: GuildMember, reason: string, channel: TextChannel, settingsStore: SettingsStore, userStore: UserStore) => Promise<void> {
     // bill person
-    userStore.billAccount(
+    await userStore.billAccount(
             user.id,
             settingsStore.settings.fineAmount,
             "Police Officer",
@@ -54,7 +45,7 @@ export class PoliceOfficer {
     logger.info(`${user} broke the law: ${reason}; billed ${settingsStore.settings.fineAmount}`);
     // todo send accumulated stuff
 
-    channel.send(
+    await channel.send(
         userFined(
           settingsStore.settings.fineAmount,
           user.id,

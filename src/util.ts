@@ -26,7 +26,7 @@ export const emojiHandler = (emojiString: string): string => {
 };
 
 export const arrayHandler = (arrayString: string): Array<string> => {
-    return arrayString.split(',').map(e=>e.trim());
+    return arrayString.split(',').map(e=>e.trim()).filter(e=>e!='');
 }
 
 export const commandParser = (cmd: string): [string, string] => {
