@@ -8,13 +8,15 @@ export class SettingsStore {
     const settings = {
       role: "",
       emoji: "",
-      delim: "",
+      delim: "=",
       currencyValue: 1,
       currencyName: "",
       photoBill: 1,
       backgroundAmount: 10,
       guildId: "",
       ignoreRole: "",
+      fineAmount: 50,
+      curses: ['death', 'dead', 'dying', 'kill'], // todo move all the homonyms and such from this and setup at least a regex
     };
     this.settings = settings;
 

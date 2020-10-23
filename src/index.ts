@@ -1,4 +1,4 @@
-import discord, { Message } from "discord.js";
+import discord, { Message, GuildMember } from "discord.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -7,9 +7,9 @@ import { UserStore } from "./stores/userStore";
 import { ChallengeStore } from "./stores/challengeStore";
 import logger from "./logger";
 
-import { commandParser, givenMoney, errorEvent } from "./util";
+import { commandParser, givenMoney, errorEvent, userFined } from "./util";
 
-import { commandsByAlias, prohibitedCommands } from "./commands";
+import { commandsByAlias, prohibitedCommands, policeOfficer } from "./commands";
 import express from "express";
 import { db } from "./dbConnection";
 import { Member } from "./models/member";
@@ -28,20 +28,31 @@ process.on("uncaughtException", (e) => {
   process.exit(1);
 });
 
+
 async function Main() {
   const c = await db;
 
   const client = new discord.Client();
   const settingsStore = new SettingsStore();
 
+
   const userStore = new UserStore();
   const challengeStore = new ChallengeStore();
+  const checkIgnore = function(member: GuildMember | null, ss: SettingsStore) {
+    return (member?.roles.cache.find((r) => r.id === ss.settings.role));
+  }
 
   client.on("message", async (msg) => {
     const delim = settingsStore.settings.delim;
     const { content } = msg;
     
     try {
+      if (!checkIgnore(msg.member, settingsStore) && settingsStore.settings.curses.indexOf('') == -1 && settingsStore.settings.curses.length > 0) {
+        // todo: get a promise and fullfill by sending userFined =\\
+        await policeOfficer.checkMessage(msg.member, content, msg.channel, settingsStore, userStore);
+      }
+      
+
       if (content.startsWith(delim)) {
         const [fullCommand, body] = commandParser(content);
         // check if the command is in the prohibited routes (=\, =/, etc.)
@@ -57,9 +68,7 @@ async function Main() {
 
           if (
             command.requiresRole &&
-            !msg.member?.roles.cache.find(
-              (r) => r.id === settingsStore.settings.role
-            )
+            !checkIgnore(msg.member, settingsStore)
           ) {
             throw new Error("Unauthorized");
           }
@@ -73,10 +82,7 @@ async function Main() {
           }
 
           if (
-            command.useIgnoreRole &&
-            msg.member?.roles.cache.find(
-              (r) => r.id === settingsStore.settings.ignoreRole
-            )
+            command.useIgnoreRole && checkIgnore(msg.member, settingsStore)
           ) {
             logger.info("ignoring");
             return; //The bot ignores you
@@ -120,9 +126,7 @@ async function Main() {
     try {
       logger.info(settingsStore.settings.ignoreRole);
       if (
-        reaction.message.member?.roles.cache.find(
-          (r) => r.id === settingsStore.settings.ignoreRole
-        )
+        checkIgnore(reaction.message.member, settingsStore)
       ) {
         logger.info("Ignoring");
         return;
@@ -186,7 +190,7 @@ async function Main() {
             .filter(
               (member) =>
                 member.presence.status === "online" &&
-                !member.roles.cache.find((r) => r.id === ignoreRole)
+                !checkIgnore(member, settingsStore)
             )
             .map((u) => u.id);
           await Member.updateMany(

@@ -7,6 +7,8 @@ import {
 } from "discord.js";
 import logger from "./logger";
 
+const taxGif = "https://media.giphy.com/media/m5Mc6wjeecaOY/giphy.gif";
+
 const roleRegex = /<@&(\d+)>/g;
 export const roleHandler = (src: string): string[] => {
   const matches = src.match(roleRegex);
@@ -23,6 +25,10 @@ export const emojiHandler = (emojiString: string): string => {
   }
 };
 
+export const arrayHandler = (arrayString: string): Array<string> => {
+    return arrayString.split(',').map(e=>e.trim()).filter(e=>e!='');
+}
+
 export const commandParser = (cmd: string): [string, string] => {
   const spaceLocation = cmd.indexOf(" ");
   if (spaceLocation < 0) return [cmd, ""];
@@ -37,6 +43,22 @@ export const mentionHandler = (src: string): string[] => {
     ? matches.map((match) => match.substr(2).replace(">", "").replace("!", ""))
     : [];
 }; //return array of ids from string;
+
+export const userFined = (
+  amount: number,
+  user: string,
+  currencyName: string
+): MessageEmbed => {
+  
+  return new MessageEmbed()
+    .setTitle(`${currencyName} Fined!`)
+    .setDescription(
+      `
+<@${user}>! You have been fined ${amount} ${currencyName}
+`
+    )
+    .setImage(taxGif);
+};
 
 export const givenMoney = (
   amount: number,

@@ -1,5 +1,15 @@
 version: "3"
 services:
   mongo:
-    network_mode: host
     image: mongo
+    ports:
+      - 27017:27017
+
+  bot:
+    build: .
+    env_file:
+      .env
+    links:
+      - "mongo:mongo"
+    ports:
+      - 32000:31337

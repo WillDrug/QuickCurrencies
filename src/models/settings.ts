@@ -1,5 +1,5 @@
 import { Schema, model, Document } from "mongoose";
-import { roleHandler, emojiHandler } from "../util";
+import { roleHandler, emojiHandler, arrayHandler } from "../util";
 export type Role = string;
 export interface Settings {
   role: Role;
@@ -11,6 +11,8 @@ export interface Settings {
   backgroundAmount: number;
   guildId: string;
   ignoreRole: Role;
+  fineAmount: number;
+  curses: Array<string>;
 }
 
 export enum SettingType {
@@ -18,6 +20,7 @@ export enum SettingType {
   number = "number",
   Role = "Role",
   Emote = "Emote",
+  Array = "Array",
 }
 
 export const settingTypes: {
@@ -50,6 +53,12 @@ export const settingTypes: {
       return emote;
     },
   },
+  Array: {
+    resolver: (v) => {
+      const arr = arrayHandler(v);
+      return arr;
+    }
+  }
 };
 
 export const settingsSetterSchema: { [key: string]: SettingType } = {
@@ -61,6 +70,8 @@ export const settingsSetterSchema: { [key: string]: SettingType } = {
   photoBill: SettingType.number,
   backgroundAmount: SettingType.number,
   ignoreRole: SettingType.Role,
+  fineAmount: SettingType.number,
+  curses: SettingType.Array
 };
 
 const settingsSchema = new Schema<Settings>({
@@ -74,6 +85,8 @@ const settingsSchema = new Schema<Settings>({
   backgroundAmount: { type: Number, required: true },
   guildId: { type: String, required: false },
   ignoreRole: { type: String, required: true },
+  fineAmount: { type: Number, required: true },
+  curses: { type: Array, required: false },
 });
 
 export const Settings = model<Settings & Document>("Settings", settingsSchema);
