@@ -5,6 +5,7 @@ import {
   DMChannel,
   NewsChannel,
 } from "discord.js";
+import { CommandSystem, Command } from "../types";
 import logger from "./logger";
 
 const roleRegex = /<@&(\d+)>/g;
@@ -15,7 +16,7 @@ export const roleHandler = (src: string): string[] => {
     : [];
 }; //return array of ids from string;
 
-export const caseInsensitiveComparator(key: string, dict: [String]: any): string => {
+export const caseInsensitiveComparator(key: string, dict: Record<string, any>): string => {
   for (var k in a) {
     if (k.toLowerCase() == key.toLowerCase()) {
       return k;
