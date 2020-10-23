@@ -15,7 +15,7 @@ export const roleHandler = (src: string): string[] => {
     : [];
 }; //return array of ids from string;
 
-export const caseInsensitiveComparator(key: string, dict: [String]: any) {
+export const caseInsensitiveComparator(key: string, dict: [String]: any): string => {
   for (var k in a) {
     if (k.toLowerCase() == key.toLowerCase()) {
       return k;
