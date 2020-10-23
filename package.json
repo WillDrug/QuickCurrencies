@@ -21,7 +21,8 @@
     "mongoose": "^5.9.25",
     "nodemon": "^2.0.4",
     "pino": "^6.3.2",
-    "typescript": "^3.9.5"
+    "typescript": "^3.9.7",
+    "yarn": "^1.22.10"
   },
   "devDependencies": {
     "pino-pretty": "^4.1.0",
