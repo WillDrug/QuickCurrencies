@@ -7,7 +7,7 @@ import { UserStore } from "./stores/userStore";
 import { ChallengeStore } from "./stores/challengeStore";
 import logger from "./logger";
 
-import { commandParser, givenMoney, errorEvent } from "./util";
+import { commandParser, givenMoney, errorEvent, caseInsensitiveComparator } from "./util";
 
 import { commandsByAlias, prohibitedCommands } from "./commands";
 import express from "express";
@@ -46,14 +46,15 @@ async function Main() {
         const [fullCommand, body] = commandParser(content);
         // check if the command is in the prohibited routes (=\, =/, etc.)
         const cmd = fullCommand.substr(1);
+         // todo lowercase when needed
          if (prohibitedCommands.includes(fullCommand)) {
           // if so, ignore
           return;
         }
 
-       
-        if (commandsByAlias[cmd]) {
-          const command = commandsByAlias[cmd];
+        const key = caseInsensitiveComparator(cmd, commandsByAlias)
+        if (key != "") {
+          const command = commandsByAlias[key];
 
           if (
             command.requiresRole &&
